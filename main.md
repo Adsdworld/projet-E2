@@ -6,7 +6,7 @@
 @Martin
 @Gislain
 @
-
+![Alt text](/IMAGES/image.ico)
 
 Projet : System de payement
 
@@ -20,7 +20,7 @@ Vision d'Arthur :
     Fonctionnalités Facultatives:
         Crer une app User qui permet de crer un compte associé à un id RFID, consulter son solde, les anciennes transactions, de bloquer sa carte
         Intégrer un système de retrait de billets 
-    Links:![Alt text](/images%20Readme/image.png)
+    Links:
         https://www.instructables.com/PART-1-Send-Arduino-data-to-the-Web-PHP-MySQL-D3js/
         https://forum.arduino.cc/t/arduino-ethernet-send-data-to-server-with-get-post-php/297719/29
         https://electronoobs.com/eng_arduino_tut101.php 
