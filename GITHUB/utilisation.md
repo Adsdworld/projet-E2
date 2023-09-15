@@ -5,6 +5,7 @@ Git:
 
 Commentaire:
     Attention, si vous copier/supprimer avec windows un dossier/fichier, il ne sera pas supprimé pour GIT, il faudrat utiliser git rm
+    Attention bis, avant de commencer à modifier les fichiers faites un -git pull
 
 Résumé:
     EN UTILISANT GIT ASSURER VOUS D'ETRE DANS LE DOSSIER DU PROJET
@@ -14,6 +15,7 @@ Résumé:
     -git rm -r DirectoryName
     -git commit -m "Commentaire sur l'update"
     -git push
+    -git pull
 
 
 1) Comment se déplacer dans le dossier du projet?
@@ -49,3 +51,6 @@ Résumé:
 5) git push?
     #permet d'envoyer la dernière version voir 4 sur GihHub
     -git push
+6) git pull?
+    #permet de récuperer ce qui se trouve sur le github
+    -git pull
