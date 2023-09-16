@@ -1,3 +1,5 @@
+Edited by: @Arthur
+
 GitHub:
     -GitHub est un site web (https://github.com/) 
     -Il faut le visualiser comme un cloud.
