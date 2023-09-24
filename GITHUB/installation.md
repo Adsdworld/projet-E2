@@ -1,7 +1,8 @@
+## Installation
 L'installation est parfois technique/demande un diplôme
 >>>voir avec Arthur
 
-Importer le projet en local sur son pc:
+## Importer le projet en local sur son pc:
     -cd ~/Documents/
     -mkdir github
     -cd github
