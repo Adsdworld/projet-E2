@@ -1,5 +1,3 @@
-Edited by: @Arthur
-
 Git:
     -Pour crer un nouvelle version avec un nouveau fichier puis mettre à jour son cloud github, il faut ajouter les nouveaux fichiers au projet (git add File.extention), si vous n'avez pas de fichier à ajouter, pas besoin de git add
     -Ensuite il faut crer une mise à jour en lui donnant l'appelation la plus précise possible (git commit -m "ajout du fichier planif")

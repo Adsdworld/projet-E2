@@ -1,17 +1,14 @@
-Edited by @Arthur
+server = "projet-e2-eseo.000webhostapp.com"; localhost est utilisable sur le site web
+user = "id21292157_projete2user";
+pass = "projet-E2-password";
+db = "id21292157_projete2database";
 
-user: user-projet-E2
-passwd: eseo
-port: 3306
-ip: "pc Arthur" (ip local variable)
-
-Edited by: @Arthur
-
-CREATE TABLE `nom_de__la_table` (
-  id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-  carte_id INT,
-  Code INT,
-  solde INT,
-  
+# Passer le carte_id en CHAR pour régler le soucis des 0 non comptabiliser avant
+CREATE TABLE information_table (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    carte_id INT, 
+    solde INT,
+    carte_code CHAR(4)
 );
+
 
