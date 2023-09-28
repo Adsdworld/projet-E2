@@ -34,34 +34,22 @@ void setup() {
 
 bool IsConnectionActive(){
   if (client.connect(host, 80)) {
-    unsigned long start = millis();
     if (client.println("PING / HTTP/1.1\r\nHost: www.google.com\r\n\r\n") > 0) {
-      unsigned long pingTime = millis() - start;
-      Serial.println("Ping successful. Response time (ms): " + String(pingTime));
     }
     client.stop();
     return true;
   } else {
-    Serial.println("Ping failed.");
-    delay(1000); // Wait before retrying
+    Serial.println("Connection is not active, unable to ping.");
+    delay(1000);
     return false;
   }
 }
 
-bool IsConnectionActive2(){
-if (Ping.ping(host)) {
-    //Serial.println("Ping réussi. La connexion Internet est active.");
-    return true;
-  } else {
-    //Serial.println("Échec du ping. Pas de connexion Internet.");
-    return false;
-  }
-}
+
 
 void SendDataToDatabase(int carte_id, int solde, int carte_code){
-  Serial.println("Arduino>>>Server (enter function)");
   if(IsConnectionActive()){
-    Serial.println("Arduino>>>Server (execute function)");
+    Serial.println("Arduino>>>Server (active connection>>>execute function)");
     data = "carte_id=" + String(carte_id) + "&solde=" + String(solde) + "&carte_code=" + String(carte_code);
 
     String url = "http://" + server + "/add.php";
@@ -72,7 +60,6 @@ void SendDataToDatabase(int carte_id, int solde, int carte_code){
     int httpCode = http.POST(data);
     if (httpCode == HTTP_CODE_OK) {
       Serial.println("Data sent successfully.");
-      // Handle the response from the server if needed
     } else {
       Serial.println("HTTP POST FAILED, check wireless connection");
       Serial.println(httpCode);
@@ -86,47 +73,17 @@ void SendDataToDatabase(int carte_id, int solde, int carte_code){
       http.addHeader("Content-Type", "application/x-www-form-urlencoded");
       httpCode = http.POST(data);
     }
-
-
     http.end();
-  }else{
-    Serial.println("Connection is not active, unable to ping");
   }
   
   // Faire une vérification en gettant les données et vérifiant si elles match parfaitement.
 }
 
-void SendDataToDatabase2(int carte_id, int solde, int carte_code){
-  Serial.println("Arduino>>>Server (enter function)");
-  if(IsConnectionActive()){
-    Serial.println("Arduino>>>Server (execute function)");
-    data = "carte_id=" + String(carte_id) + "&solde=" + String(solde) + "&carte_code=" + String(carte_code);
 
-    if (client.connect(server, 80)) {
-      client.println("POST /add.php HTTP/1.1");
-      client.println("Host: "+server); 
-      client.println("Content-Type: application/x-www-form-urlencoded");
-      client.print("Content-Length: ");
-      client.println(data.length());
-      client.println();
-      client.print(data);
-    }
-
-    if (client.connected()) {
-      client.stop(); // Déconnexion du serveur
-    }
-  }else{
-    Serial.println("Connection is not active, unable to ping");
-  }
-  
-  // Faire une vérification en gettant les données et vérifiant si elles match parfaitement.
-}
 
 String ReceiveDataFromDatabase(int carte_id){
-  Serial.println("Server>>>Arduino (enter function)");
   if(IsConnectionActive()){
-    
-    Serial.println("Server>>>Arduino (execute function)");
+    Serial.println("Server>>>Arduino (active connection>>>execute function)");
     String url = "http://"+server+"/get_data.php?carte_id=" + carte_id;
     HTTPClient http;
     http.begin(client, url);
@@ -137,22 +94,18 @@ String ReceiveDataFromDatabase(int carte_id){
       data_received = http.getString();
       Serial.println("Data received:");
       Serial.println(data_received);
-      // Analysez les données JSON ici et affichez-les sur la console série
     } else {
       Serial.println("HTTP GET FAILED, check wireless connection");
       Serial.println(httpCode);
     }
-
     http.end();
     return data_received;
-  }else{
-    Serial.println("Connection is not active, unable to ping");
-    return "null";
   }
+  return "null";
 }
 
 int ExtractFieldValue(String dataReceived, String fieldName) {
-  const size_t capacity = JSON_OBJECT_SIZE(4) + 60; //ici il y a 4 valeurs: id, carte_id, solde, carte_code >>> à ajuster
+  const size_t capacity = JSON_OBJECT_SIZE(4) + 60; //ici il y a 4 valeurs: id, carte_id, solde, carte_code >>> à ajuster en fonction des données reçus
   DynamicJsonDocument doc(capacity);
   DeserializationError error = deserializeJson(doc, dataReceived);
 
@@ -173,7 +126,7 @@ int ExtractFieldValue(String dataReceived, String fieldName) {
 
 void loop() {
   
-  SendDataToDatabase(888888, 1000000, 4949);
+  SendDataToDatabase(999999, 100, 5353);
   //delay(5000);
   ReceiveDataFromDatabase(123456);
   //int solde=ExtractFieldValue(ReceiveDataFromDatabase(123456789), "solde");
