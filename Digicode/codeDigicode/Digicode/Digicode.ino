@@ -24,8 +24,19 @@ String GetCodeByDigicode() {
 
   while (code.length() < nombre_de_caracteres) {
     char caractere = mon_keypad.getKey();
- 
+
     if (caractere) {
+        if (caractere == 'A' || caractere == 'B' || caractere == 'C' || caractere == 'D') {
+          Serial.println("Erreur : Code non valide");
+          return "";
+        }
+        else if (caractere == '*') {
+          Serial.println("Code annulé");
+          code = "";
+          a = "";
+          continue;
+        }
+
       code += caractere;
       delay(200); // Attendez un peu pour éviter de capturer plusieurs fois la même touche
       for (int i = 0; i <= code.length(); i++); {
