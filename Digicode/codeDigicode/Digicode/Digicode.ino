@@ -31,7 +31,7 @@ String GetCodeByDigicode() {
       for (int i = 0; i <= code.length(); i++); {
       a += "#";
     }
-    
+
     Serial.println(a);
     }
     
@@ -46,5 +46,5 @@ void setup() {
 
 void loop() {
   String code = GetCodeByDigicode();
-  //testee-r sur la database
+  //tester sur la database
 }
