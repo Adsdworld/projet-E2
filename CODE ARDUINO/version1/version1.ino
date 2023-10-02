@@ -1,3 +1,7 @@
+String carte_id;
+String solde;
+String carte_code;
+
 
 // Variables Web
 #include <ESPping.h>
@@ -15,7 +19,7 @@ String server="projet-e2-eseo.000webhostapp.com";
 const char* host = "www.google.com";
 
 // Variables digicode
-#include <Keypad.h>
+//#include <Keypad.h>
 const byte Ligne = 4; // Quatre lignes sur le digicode
 const byte Colonne = 4; // Quatre colonnes sur le digicode
 char hexaBouton[Ligne][Colonne] = { // On définit maintenant les symboles correspondant à chaque bouton
@@ -30,7 +34,7 @@ Keypad mon_keypad = Keypad(makeKeymap(hexaBouton), Ligne_Pins, Colonne_Pins, Lig
 
 // Variables RFID
 #include <SPI.h> // SPI
-#include <MFRC522.h> //RFID
+//#include <MFRC522.h> //RFID
 #define SS_PIN 10
 #define RST_PIN 9
 MFRC522 rfid(SS_PIN, RST_PIN);
@@ -50,6 +54,9 @@ void setup() {
   //Code RFID
   SPI.begin();
   rfid.PCD_Init();
+
+  //ECRAN de démarrage
+  Serial.println("Arduino démarré!")
 }
 
 
@@ -206,22 +213,36 @@ String GetId() {
 
 
 void loop() {
-  
-  SendDataToDatabase(999999, 100, 5353);
-  //delay(5000);
-  ReceiveDataFromDatabase(123456);
-  //int solde=ExtractFieldValue(ReceiveDataFromDatabase(123456789), "solde");
-  //Serial.println(solde);
-  //String code = GetCodeByDigicode();
-  String carte_id = GetId();
+  //ECRAN scanner votre carte
+  String RFID_id = GetId();
   if (carte_id != 0000 && carte_id != "") {
-  Serial.println("carte_id send to database: " + carte_id);
-  }
-
-
+    Serial.println("Une carte à été reconnue!");
+    //ECRAN entrer votre code confidentiel
+    Serial.println("Entrer votre code confidentiel à 4 chiffres")
+    String DigicodeCode = GetCodeByDigicode();
+    data=ReceiveDataFromDatabase(carte_id);
+    carte_code=ExtractFieldValue(data, "carte_code");
+    solde=ExtractFieldValue(data, "solde");
+    if (carte_code==DigicodeCode){
+      //Ecran vous avez été correctement identifer
+      Serial.println("carte_id: "+carte_id+"\nsolde: "+solde+"\n carte_code: "+carte_code)
+    }
+  }  
 }
 
 
+/*
+SendDataToDatabase(999999, 100, 5353);
+delay(5000);
+ReceiveDataFromDatabase(123456);
+int solde=ExtractFieldValue(ReceiveDataFromDatabase(123456789), "solde");
+Serial.println(solde);
 
+String code = GetCodeByDigicode();
 
+String carte_id = GetId();
+if (carte_id != 0000 && carte_id != "") {
+  Serial.println("Carte id reconnue!");
+}
+*/
 
