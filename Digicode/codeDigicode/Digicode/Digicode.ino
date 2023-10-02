@@ -44,6 +44,7 @@ String GetCodeByDigicode() {
     }
 
     Serial.println(a);
+    
     }
     
   }
