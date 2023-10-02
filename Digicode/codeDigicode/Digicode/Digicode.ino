@@ -20,16 +20,23 @@ Keypad mon_keypad = Keypad(makeKeymap(hexaBouton), Ligne_Pins, Colonne_Pins, Lig
 String GetCodeByDigicode() {
   const int nombre_de_caracteres = 4;
   String code = "";
+  String a = "";
 
   while (code.length() < nombre_de_caracteres) {
     char caractere = mon_keypad.getKey();
-
+ 
     if (caractere) {
       code += caractere;
       delay(200); // Attendez un peu pour éviter de capturer plusieurs fois la même touche
+      for (int i = 0; i <= code.length(); i++); {
+      a += "#";
     }
+    
+    Serial.println(a);
+    }
+    
   }
-
+  Serial.println("Code confidentiel saisi : " + code);
   return code;
 }
 
@@ -39,11 +46,5 @@ void setup() {
 
 void loop() {
   String code = GetCodeByDigicode();
-
-  if (code.length() == 4) {
-    Serial.println("Code confidentiel saisi : " + code);
-    // Vous pouvez ajouter votre logique pour vérifier le code ici
-    // Par exemple, le comparer avec un code prédéfini pour autoriser l'accès.
-  }
+  //testee-r sur la database
 }
-
