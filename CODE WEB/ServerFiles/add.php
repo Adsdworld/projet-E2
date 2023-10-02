@@ -13,7 +13,7 @@ $stmt = mysqli_prepare($link, $query);
 
 if ($stmt) {
     // Associez les valeurs aux paramètres de la requête
-    mysqli_stmt_bind_param($stmt, "iis", $carte_id, $solde, $carte_code);
+    mysqli_stmt_bind_param($stmt, "sss", $carte_id, $solde, $carte_code); //iss pour un entier 2 string 
 
     // Exécutez la requête
     mysqli_stmt_execute($stmt);
@@ -25,6 +25,4 @@ if ($stmt) {
 }
 
 mysqli_close($link);
-
-header("Location: index.php");
 ?>

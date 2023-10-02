@@ -7,9 +7,6 @@
 #include <WiFiClient.h>
 
 
-//#include <SPI.h> //vérifier si c'est utile
-
-
 // Variables
 WiFiClient client;
 #define WIFI_SSID "Redmi Note 8 Pro"
@@ -17,6 +14,7 @@ WiFiClient client;
 String data="";
 String server="projet-e2-eseo.000webhostapp.com";
 const char* host = "www.google.com";
+
 
 void setup() {
   Serial.begin(115200);
@@ -125,14 +123,11 @@ int ExtractFieldValue(String dataReceived, String fieldName) {
 }
 
 void loop() {
-  
-  SendDataToDatabase("009900", "00100000", "0330");
-  //delay(5000);
-  //ReceiveDataFromDatabase(123456);
-  //int solde=ExtractFieldValue(ReceiveDataFromDatabase(123456789), "solde");
+  //SendDataToDatabase("009900", "00100000", "0330");
+  //data=ReceiveDataFromDatabase(123456);
+  //int solde=ExtractFieldValue(ReceiveDataFromDatabase(009900), "solde");
+  //int carte_code=ExtractFieldValue(ReceiveDataFromDatabase(009900), "carte_code");
   //Serial.println(solde);
-  //delay(20000);
-
 }
 
 
