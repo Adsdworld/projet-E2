@@ -11,8 +11,11 @@ char hexaBouton[Ligne][Colonne] = {
   {'*', '0', '#', 'D'}
 };
 
-byte Ligne_Pins[Ligne] = {9, 8, 7, 6}; // On connecte la ligne du digicode 
-byte Colonne_Pins[Colonne] = {5, 4, 3, 2}; // On connecte la colonne du digicode
+byte Ligne_Pins[Ligne] = {D7, D6, D5, D4}; // On connecte la ligne du digicode 
+byte Colonne_Pins[Colonne] = {D3, D2, D1, D0}; // On connecte la colonne du digicode
+
+//byte Ligne_Pins[Ligne] = {D0, D1, D2, D3}; // On connecte la ligne du digicode 
+//byte Colonne_Pins[Colonne] = {D4, D5, D6, D7}; // On connecte la colonne du digicode
 
 // On initialise la librairie avec nos paramètres (la taille de la matrice et symboles)
 Keypad mon_keypad = Keypad(makeKeymap(hexaBouton), Ligne_Pins, Colonne_Pins, Ligne, Colonne); 
@@ -54,6 +57,15 @@ String GetCodeByDigicode() {
 
 void setup() {
   Serial.begin(115200);
+  pinMode(D0, OUTPUT);
+  pinMode(D1, OUTPUT);
+  pinMode(D2, OUTPUT);
+  pinMode(D3, OUTPUT);
+  pinMode(D4, OUTPUT);
+  pinMode(D5, OUTPUT);
+  pinMode(D6, OUTPUT);
+  pinMode(D7, OUTPUT);
+  pinMode(D8, OUTPUT);
 }
 
 void loop() {
