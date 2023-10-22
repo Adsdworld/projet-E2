@@ -10,6 +10,5 @@ void setup() {
 void loop() {
   Serial.println("/*Wifi#001*/");
   delay(1000);
-  Receive_var=Serial.read();
-  if 
+
 }

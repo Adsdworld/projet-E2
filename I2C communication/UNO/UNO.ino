@@ -1,7 +1,7 @@
 //char Mymessage[10]; //Initialized variable to store recieved data
 //char res[10]="0123456789"; //Initialized variable to store recieved data
 String serial_read="";
-String te="/*Wifi#001*/";
+String te="/*Wifi#001$*/";
 
   void setup() {
     Serial.begin(9600);
@@ -12,13 +12,13 @@ String te="/*Wifi#001*/";
 //cartecible %wifi
 //pouvoir séparer les infos
 
-  String FindCaracter(String chaine,char caracter){
+  String FindCaracter(String chaine,String caracter){
     bool find=false;
     String findstring="";
     for (int i=0;i<chaine.length();i++){
       if (find==false){
         Serial.println(chaine[i]);
-        if (chaine[i]==caracter){
+        if (chaine[i]==caracter[0]){
           Serial.println("caractere trouvé");
           find=true;
           findstring+=chaine[i];
