@@ -18,7 +18,6 @@ String ReadInstantMsgFromArduino(){
 
 void setup() {
   Serial.begin(115200);
-  pinMode(LED_BUILTIN, OUTPUT);
 }
 
 void loop() {
@@ -61,22 +60,6 @@ void loop() {
   }
 }
 
-
-String GetCardID(){ //exemple test pour le RFID
-  delay(1000);
-  Shiny(100, 50);
-  return "D2HJ82";
-}
-void Shiny(int nb, int ms){
-  for (int i=1;i<nb;i++){
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(ms);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(ms);
-  }
-  return;
-}
-
 void Start(){
   int Timeout=millis()+TimeoutArduinoUno;
   while(true){
@@ -89,7 +72,7 @@ void Start(){
 }
 void Connecting(){
   while(true){
-    //3 fast wifi screen animation
+    //3 fast wifi connecting screen animation
     if (ReadInstantMsgFromArduino()=="CONNECTED"){
       return;
     }
@@ -126,12 +109,12 @@ void DigiCode(String Message){
     // * * * _
   }
   else if (Message=="D4"){
-    // * * * * use # to validate code
+    // * * * * use '#' to validate code
   }
 }
 void DataBase(){
   while(true){
-    //animations courtes?
+    //animations courtes? rond qui tourne
     if (ReadInstantMsgFromArduino()=="DATABASED"){
       return;
     }
