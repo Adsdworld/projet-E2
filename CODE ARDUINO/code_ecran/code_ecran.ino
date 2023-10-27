@@ -151,6 +151,7 @@ void virement(){
     }
   }
 }
+
 void retrait(){
   bool testouch=false;
   tft.fillScreen(ILI9341_WHITE);
@@ -240,4 +241,5 @@ unsigned long aurevoir(){
   tft.setCursor(10, 110);tft.print("Au revoir !");
   delay(2000);
   insertion();
+  menu();
 }

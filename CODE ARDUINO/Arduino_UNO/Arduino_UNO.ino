@@ -1,3 +1,8 @@
+
+/****************************************************************************************************************************************
+* TOUT SAUF ECRAN:                                                                                                                                 *
+*   Contient les Variables essentiels.                                                                                                  *
+****************************************************************************************************************************************/
 int TimeoutMsgResponse=1000;
 int TimeoutArduinoUno=20000;
 #include "Adafruit_GFX.h"
@@ -60,6 +65,7 @@ void loop() {
       Serial.print("OK");
       Welcome();
       Serial.print("TOUCH");
+      menu();
     }
     else if(StringBuilder==String("RFID")){
       Serial.print("OK");
@@ -72,6 +78,10 @@ void loop() {
     else if(StringBuilder==String("DATABASE")){
       Serial.print("OK");
       DataBase();
+    }
+    else if(StringBuilder==String("AUREVOIR")){
+      Serial.print("OK");
+      aurevoir("AUREVOIR MSG");
     }
     else{
       Serial.print("ERROR");
@@ -99,9 +109,13 @@ void Connecting(){
 }
 void Welcome(){
   int Timeout=millis()+TimeoutArduinoUno;
+  aurevoir("WELCOME Touch screen please");
   while(true){
     while(millis()<Timeout){
-      //if (screen is touch){return;}
+      if (ts.touched()){
+        aurevoir("TOUCHED");
+        return;
+      }
     }
     Serial.print("KA");
   }
@@ -145,8 +159,140 @@ void insertion(){
   tft.setTextColor(ILI9341_BLACK);
   tft.setCursor(100, 10);tft.print("Bienvenue");
   tft.setCursor(10, 110);tft.print("Veuillez scanner votre");tft.setCursor(10, 135);tft.print("carte");
-  while(testcarte==false){
-    testcarte=true;
-  }
+
   delay(2000);
+}
+
+unsigned long aurevoir(String message){
+  tft.fillScreen(ILI9341_WHITE);
+  tft.setTextColor(ILI9341_BLACK);
+  tft.setCursor(10, 110);tft.print(message);
+  delay(2000);
+}
+
+/****************************************************************************************************************************************
+* ECRAN:                                                                                                                                 *
+*   Contient les Variables essentiels.                                                                                                  *
+****************************************************************************************************************************************/
+//fonctions avec des animations stylés:
+//  cercle qui grandit en fonction du point de contact
+// cercle qui apparait à l'endroit du contact 
+// animation style win7 qui démarre
+// fonctions direction de message 
+
+// à coté des fonction spéciques style
+// écrant retrait depot avec inclure le contact + des fonction stylés
+void menu(){
+  bool testouch=false;
+  tft.fillScreen(ILI9341_WHITE);
+  tft.setTextColor(ILI9341_BLACK);
+  tft.setCursor(50, 10);tft.print("Votre solde est de ");
+  tft.setCursor(140, 40);tft.print("solde");tft.print("$");
+  tft.setCursor(10, 80);tft.print("Que voulez-vous faire?");
+  tft.setTextColor(ILI9341_WHITE);
+  tft.fillRoundRect(5,135,94,24,10,ILI9341_BLACK);tft.setCursor(10, 140);tft.print("Retrait");
+  tft.fillRoundRect(115,135,74,24,10,ILI9341_BLACK);tft.setCursor(120, 140);tft.print("Depot");
+  tft.fillRoundRect(205,135,104,24,10,ILI9341_BLACK);tft.setCursor(210, 140);tft.print("Virement");
+  tft.fillRoundRect(5,195,74,24,10,ILI9341_BLACK);tft.setCursor(10, 200);tft.print("Finir");
+  while(testouch==false){
+    boolean touch = ts.touched();
+    TS_Point p = ts.getPoint();
+    if(touch && p.x>2300 && p.x<2600 && p.y>450 &&p.y<1500){
+    retrait();
+    testouch=true;
+    delay(100);
+    }
+    if(touch && p.x>2300 && p.x<2600 && p.y>1600 &&p.y<2500){
+    depot();
+    testouch=true;
+    delay(100);
+    }
+    if(touch && p.x>2300 && p.x<2600 && p.y>2700 &&p.y<3800){
+    testouch=true;
+    virement();
+    delay(100);
+    }
+    if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){
+    aurevoir("EXIT !");
+    delay(100);
+    testouch=true;
+    }
+  }
+}
+void virement(){
+  bool testouch=false;
+  tft.fillScreen(ILI9341_WHITE);
+  tft.setTextColor(ILI9341_BLACK);
+  tft.setCursor(10, 110);tft.print("Y a pas l'option");
+  tft.setTextColor(ILI9341_WHITE);
+  tft.fillRoundRect(5,195,94,24,10,ILI9341_BLACK);tft.setCursor(10, 200);tft.print("Annuler");
+  while(testouch==false){
+    boolean touch = ts.touched();
+    TS_Point p = ts.getPoint();
+    if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){
+    menu();
+    delay(100);
+    testouch=true;
+    }
+  }
+}
+void retrait(){
+  bool testouch=false;
+  tft.fillScreen(ILI9341_WHITE);
+  tft.setTextColor(ILI9341_BLACK);
+  tft.setCursor(110, 10);tft.print("Retrait");
+  tft.setTextColor(ILI9341_WHITE);
+  tft.fillRoundRect(10,195,94,24,10,ILI9341_BLACK);tft.setCursor(15, 200);tft.print("Annuler");
+  tft.fillRoundRect(205,195,74,24,10,ILI9341_BLACK);tft.setCursor(210, 200);tft.print("Finir");
+  tft.fillRoundRect(10,105,45,24,10,ILI9341_BLACK);tft.setCursor(15, 110);tft.print("10$");
+  tft.fillRoundRect(85,105,45,24,10,ILI9341_BLACK);tft.setCursor(90, 110);tft.print("20$");
+  tft.fillRoundRect(165,105,45,24,10,ILI9341_BLACK);tft.setCursor(170, 110);tft.print("50$");
+  tft.fillRoundRect(240,105,55,24,10,ILI9341_BLACK);tft.setCursor(245, 110);tft.print("100$");
+  while(testouch==false){
+    boolean touch = ts.touched();
+    TS_Point p = ts.getPoint();
+    if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){
+    menu();
+    delay(100);
+    testouch=true;
+    }
+    if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){
+    menu();
+    delay(100);
+    testouch=true;
+    }
+    if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){
+    menu();
+    delay(100);
+    testouch=true;
+    }
+    if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){
+    menu();
+    delay(100);
+    testouch=true;
+    }
+    if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){
+    menu();
+    delay(100);
+    testouch=true;
+    }
+  }
+}
+void depot(){
+  bool testouch=false;
+  tft.fillScreen(ILI9341_WHITE);
+  tft.setTextColor(ILI9341_BLACK);
+  tft.setCursor(110, 10);tft.print("Depot");
+  tft.setTextColor(ILI9341_WHITE);
+  tft.fillRoundRect(5,195,94,24,10,ILI9341_BLACK);tft.setCursor(10, 200);tft.print("Annuler");
+  tft.fillRoundRect(205,195,94,24,10,ILI9341_BLACK);tft.setCursor(210, 200);tft.print("Finir");
+  while(testouch==false){
+    boolean touch = ts.touched();
+    TS_Point p = ts.getPoint();
+    if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){
+    menu();
+    delay(100);
+    testouch=true;
+    }
+  }
 }
