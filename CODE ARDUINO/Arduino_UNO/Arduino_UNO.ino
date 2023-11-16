@@ -3,8 +3,56 @@
 * TOUT SAUF ECRAN:                                                                                                                                 *
 *   Contient les Variables essentiels.                                                                                                  *
 ****************************************************************************************************************************************/
-int TimeoutMsgResponse=1000;
-int TimeoutArduinoUno=20000;
+#include <SoftwareSerial.h>
+#define rxPin 2
+#define txPin 3
+int CommunicationDelay=1000;
+int ConsoleRefreshDelay=1000;
+int SlaveTimeout=60000/3;
+SoftwareSerial mySerial (rxPin, txPin);
+void COMSetup(){
+  pinMode(rxPin, INPUT);
+  pinMode(txPin, OUTPUT);
+  mySerial.begin(9600);
+  Serial.begin(115200);
+}
+void sendMsgToMaster(String message) {
+  mySerial.print(message);
+  Serial.println("Une message à été envoyé:"+message);
+  delay(CommunicationDelay*4);
+}
+String readMsgFromMaster() {
+  String receivedMessage = "";
+  Serial.println("\n***Waiting for data available from Master");
+  while (!mySerial.available()) {
+  }
+  Serial.print("New data available from Master");
+  delay(CommunicationDelay); // Wait for the short message to arrive
+  while (mySerial.available() > 0) {
+    char serialData = mySerial.read();
+    receivedMessage += String(serialData);
+  }
+  Serial.println("\n***Message reçu du Master:"+receivedMessage+"\n");
+  return receivedMessage;
+}
+String InstantreadMsgFromMaster() {
+  String receivedMessage = "";
+  //Serial.println("\n***Checking for data available from Master");
+  if (mySerial.available()>0){
+    Serial.print("New data available from Master");
+    delay(CommunicationDelay); // Wait for the short message to arrive
+    while (mySerial.available() > 0) {
+      char serialData = mySerial.read();
+      receivedMessage += String(serialData);
+    }
+    Serial.println("\n***Message reçu du Master:"+receivedMessage+"\n");
+    return receivedMessage;
+  }
+  //Serial.println("\n***Checked");
+  return "null";
+}
+
+
 #include "Adafruit_GFX.h"
 #include "Adafruit_ILI9341.h"
 #include <XPT2046_Touchscreen.h>
@@ -15,23 +63,26 @@ int TimeoutArduinoUno=20000;
 #define TFT_RST 8
 XPT2046_Touchscreen ts(CS_PIN);
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
-String ReadInstantMsgFromArduino(){
-  String StringBuilder="";
+/*
+String InstantreadMsgFromMaster(){
+  String receivedMessage="";
   while(true){
     if (0<Serial.available()){
-      delay(TimeoutMsgResponse); //laisser un peu de temps pour que le court message arrive
+      delay(CommunicationDelay); //laisser un peu de temps pour que le court message arrive
       while(Serial.available()>0){
         char Serialdata =Serial.read();
-        StringBuilder+=String(Serialdata);
+        receivedMessage+=String(Serialdata);
       }
-      return StringBuilder;
+      return receivedMessage;
     }
   }
   return "NO MESSAGE FOUND";
 }
-
+*/
 void setup() {
-  Serial.begin(115200);
+  delay(5000);
+  COMSetup();
+
   pinMode(TFT_CS, OUTPUT);
   digitalWrite(TFT_CS, HIGH);
   pinMode(CS_PIN, OUTPUT);
@@ -45,70 +96,64 @@ void setup() {
 }
 
 void loop() {
-  if (0<Serial.available()){
-    String StringBuilder="";
-    delay(TimeoutMsgResponse); //laisser un peu de temps pour que le court message arrive
-    while(Serial.available()>0){
-      char Serialdata =Serial.read();
-      StringBuilder+=String(Serialdata);
-    }
-    if (StringBuilder==String("START")){//affiche une animation cool de démarrage
-      Serial.print("OK");
+  String receivedMessage = readMsgFromMaster();
+    if (receivedMessage==String("START")){//affiche une animation cool de démarrage
+      sendMsgToMaster("OK");
       Start();
-      Serial.print("STARTED");
+      sendMsgToMaster("STARTED");
     }
-    else if(StringBuilder==String("CONNECTING")){
-      Serial.print("OK");
+    else if(receivedMessage==String("CONNECTING")){
+      sendMsgToMaster("OK");
       Connecting();
     }
-    else if (StringBuilder==String("WELCOME")){//affiche une animation cool de démarrage
-      Serial.print("OK");
+    else if(receivedMessage==String("CONNECTED")){
+      sendMsgToMaster("OK");
+      Connected();
+    }
+    else if (receivedMessage==String("WELCOME")){//affiche une animation cool de démarrage
+      sendMsgToMaster("OK");
       Welcome();
-      Serial.print("TOUCH");
+      sendMsgToMaster("TOUCH");
       menu();
     }
-    else if(StringBuilder==String("RFID")){
-      Serial.print("OK");
+    else if(receivedMessage==String("RFID")){
+      sendMsgToMaster("OK");
       RFID();
     }
-    else if(StringBuilder.charAt(0)=='D'){
-      Serial.print("OK");
-      DigiCode(StringBuilder);
-    }
-    else if(StringBuilder==String("DATABASE")){
-      Serial.print("OK");
+    else if(receivedMessage==String("DATABASE")){
+      sendMsgToMaster("OK");
       DataBase();
     }
-    else if(StringBuilder==String("AUREVOIR")){
-      Serial.print("OK");
-      aurevoir("AUREVOIR MSG");
+    else if(receivedMessage==String("AUREVOIR")){
+      sendMsgToMaster("OK");
+      sendMsgToMaster("AUREVOIR MSG");
     }
     else{
-      Serial.print("ERROR");
+      Serial.print("/!\\Message non reconnue/!\\");
     }
-  }
 }
 
 void Start(){
-  int Timeout=millis()+TimeoutArduinoUno;
+  int Timeout=millis()+SlaveTimeout;
   while(true){
-    while(millis()<Timeout){
-      //Some screen animations, do not exceed TimeoutArduinoUno or découper en petite animations et vérifier le timetout entre chaques pour svoir si oui ou non envoyer un KeepAlive
-      return;
+    //image1
+    aurevoir("start img 1");
+    if (millis()>Timeout){
+      sendMsgToMaster("KA");
     }
-    Serial.print("KA");
+    //image2
+    aurevoir("start img 2");
+    return;
   }
 }
 void Connecting(){
-  while(true){
-    //3 fast wifi connecting screen animation
-    if (ReadInstantMsgFromArduino()=="CONNECTED"){
-      return;
-    }
-  }
+    aurevoir("wifi img 1 connecting");
+}
+void Connected(){
+    aurevoir("wifi img 1 connected");
 }
 void Welcome(){
-  int Timeout=millis()+TimeoutArduinoUno;
+  int Timeout=millis()+SlaveTimeout;
   aurevoir("WELCOME Touch screen please");
   while(true){
     while(millis()<Timeout){
@@ -123,7 +168,7 @@ void Welcome(){
 void RFID(){
   while(true){
     //animations courtes?
-    if (ReadInstantMsgFromArduino()=="RFIDED"){
+    if (InstantreadMsgFromMaster()=="RFIDED"){
       return;
     }
   }
@@ -148,7 +193,7 @@ void DigiCode(String Message){
 void DataBase(){
   while(true){
     //animations courtes? rond qui tourne
-    if (ReadInstantMsgFromArduino()=="DATABASED"){
+    if (InstantreadMsgFromMaster()=="DATABASED"){
       return;
     }
   }
