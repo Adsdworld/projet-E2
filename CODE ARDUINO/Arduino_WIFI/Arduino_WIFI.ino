@@ -49,8 +49,9 @@ String readMsgFromSlaveWithTimeout() {
           receivedMessage += String(serialData);
         }
         Serial.println("\n***Message reçu du Slave:"+receivedMessage+"\n");
-        if (receivedMessage=="KA"){
+        if (receivedMessage=="KA" || receivedMessage=="KAKA"){
           Timeout=millis()+SlaveTimeout;
+          Serial.println("Reseting Timeout");
         }
         else{
           return receivedMessage;

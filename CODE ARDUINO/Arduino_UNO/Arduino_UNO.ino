@@ -8,7 +8,7 @@
 #define txPin 3
 int CommunicationDelay=1000;
 int ConsoleRefreshDelay=1000;
-int SlaveTimeout=60000/3;
+int SlaveTimeout=60000;
 SoftwareSerial mySerial (rxPin, txPin);
 void COMSetup(){
   pinMode(rxPin, INPUT);
@@ -134,7 +134,7 @@ void loop() {
 }
 
 void Start(){
-  int Timeout=millis()+SlaveTimeout;
+  int Timeout=millis()+SlaveTimeout/3;
   while(true){
     //image1
     aurevoir("start img 1");
@@ -153,8 +153,9 @@ void Connected(){
     aurevoir("wifi img 1 connected");
 }
 void Welcome(){
-  int Timeout=millis()+SlaveTimeout;
   aurevoir("WELCOME Touch screen please");
+  float Timeout=(millis()+(SlaveTimeout/3));
+  Serial.println("Current millis:"+String(millis())+" Timeout:"+String(Timeout));
   while(true){
     while(millis()<Timeout){
       if (ts.touched()){
@@ -162,7 +163,9 @@ void Welcome(){
         return;
       }
     }
-    Serial.print("KA");
+    sendMsgToMaster("KA");
+    Timeout=(millis()+(SlaveTimeout/3));
+    Serial.println("Current millis:"+String(millis())+" Timeout:"+String(Timeout));
   }
 }
 void RFID(){
