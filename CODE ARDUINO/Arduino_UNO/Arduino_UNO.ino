@@ -154,7 +154,7 @@ void Connected(){
 }
 void Welcome(){
   aurevoir("WELCOME Touch screen please");
-  float Timeout=(millis()+(SlaveTimeout/3));
+  int Timeout=(millis()+(SlaveTimeout/3));
   Serial.println("Current millis:"+String(millis())+" Timeout:"+String(Timeout));
   while(true){
     while(millis()<Timeout){

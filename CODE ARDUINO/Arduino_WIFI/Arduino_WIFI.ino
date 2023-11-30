@@ -110,8 +110,7 @@ void WIFISetup(){
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   Serial.println("Connection au wifi");
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+    Shiny(1, 250);
   }
   Serial.println("Connecté ! Adresse IP : ");
   Serial.println(WiFi.localIP());
@@ -241,6 +240,7 @@ String GetId() {
 *   ???                                                                                                                                 *
 ****************************************************************************************************************************************/
 void setup() { 
+  delay(5000);
   COMSetup(); //mettre en premier pour le Serial.begin
   pinMode(LED_BUILTIN, OUTPUT);
   while(true){
