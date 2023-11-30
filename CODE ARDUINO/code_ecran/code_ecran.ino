@@ -3,86 +3,50 @@
 #include <XPT2046_Touchscreen.h>
 #include <SPI.h>
 
-#define CS_PIN  7
-#define TFT_DC  9
-#define TFT_CS 10
-#define TFT_RST 8
+#define CS_PIN  47
+#define TFT_DC  49
+#define TFT_CS 53
+#define TFT_RST 48
 
-int solde = 32767;
+unsigned long solde = 32768;
+int soldeTemp=0;
 char nom[]="Lilian";
 XPT2046_Touchscreen ts(CS_PIN);
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
-//MFRC522 rfid(RFID_CS, RFID_RST);
-//byte nuidPICC[4];
 void setup() {
-  //Serial.begin(9600);
   pinMode(TFT_CS, OUTPUT);
   digitalWrite(TFT_CS, HIGH);
   pinMode(CS_PIN, OUTPUT);
   digitalWrite(CS_PIN, HIGH);
-  //pinMode(RFID_CS, OUTPUT);
-  //digitalWrite(RFID_CS, HIGH);
-  //SPI.begin();
   tft.begin();
   ts.begin();
+  Serial.begin(115200);
   tft.setRotation(3);
   ts.setRotation(4);
   tft.fillScreen(ILI9341_WHITE);
   tft.setTextSize(2);
-  // Init SPI bus
-  
-
-  // Init MFRC522
-  //rfid.PCD_Init();
 }
-/*String GetId() {
-  String id = "";
 
-  while (!rfid.PICC_IsNewCardPresent()) {
-    //delay(50);
-    //Serial.print("on attends");
-    //return id;
-  }
-
-  if (!rfid.PICC_ReadCardSerial()) {
-    String id;
-    for (byte i = 0; i < 4; i++) {
-      id += String(rfid.uid.uidByte[i], HEX);
-    }
-
-    Serial.println("Un badge est détecté. L'UID du tag est: ");
-    Serial.println(id);
-
-    rfid.PICC_HaltA();
-    rfid.PCD_StopCrypto1();
-  if(id==0000 || id=="0000"){
-      return GetId();
-    }else{
-      return id;
-    }
-  }
-  return GetId();
-}*/
 void loop() {
-  //String RFID_id = GetId();
-  //Serial.println("Une carte à été reconnue!");
-  TS_Point p = ts.getPoint();
-  tft.setTextColor(ILI9341_DARKGREEN);
-  tft.setCursor(10, 180);tft.print("X = ");tft.print(p.x);
-  tft.setCursor(10, 210);tft.print("Y = ");tft.print(p.y);
-  
-
-
   boolean istouched = ts.touched();
-  /*TS_Point p = ts.getPoint();
+  TS_Point p = ts.getPoint();
   tft.fillRect(50, 180, 140, 60, ILI9341_WHITE);
   tft.setTextColor(ILI9341_DARKGREEN);
   tft.setCursor(10, 180);tft.print("X = ");tft.print(p.x);
-  tft.setCursor(10, 210);tft.print("Y = ");tft.print(p.y);
-  */if(istouched){
+  tft.setCursor(10, 210);tft.print("Y = ");tft.print(p.y); 
+  tft.fillRoundRect(205,195,94,24,10,ILI9341_BLACK);tft.setCursor(210, 200);tft.print("Valider");
+  tft.fillRoundRect(10,95,45,24,10,ILI9341_BLACK);tft.setCursor(15, 100);tft.print("10$");
+  tft.fillRoundRect(85,95,45,24,10,ILI9341_BLACK);tft.setCursor(90, 100);tft.print("20$");
+  tft.fillRoundRect(165,95,45,24,10,ILI9341_BLACK);tft.setCursor(170, 100);tft.print("50$");
+  tft.fillRoundRect(240,95,55,24,10,ILI9341_BLACK);tft.setCursor(245, 100);tft.print("100$");
+  tft.fillRoundRect(70,135,165,24,10,ILI9341_BLACK);tft.setCursor(75, 140);tft.print("Autre montant");
+  retrait();
+  /*if(istouched){
     insertion();
   }
   istouched=false;
+  char message[]="Salut je m'appelle Lilian Lemercier";
+  envoieMessage(message,10);*/
   delay(100);
 }
 void menu(){
@@ -156,30 +120,37 @@ void retrait(){
   tft.fillScreen(ILI9341_WHITE);
   tft.setTextColor(ILI9341_BLACK);
   tft.setCursor(110, 10);tft.print("Retrait");
+  tft.setCursor(10, 30);tft.print("Combien voulez vous \n retirer?");
   tft.setTextColor(ILI9341_WHITE);
   tft.fillRoundRect(10,195,94,24,10,ILI9341_BLACK);tft.setCursor(15, 200);tft.print("Annuler");
-  tft.fillRoundRect(205,195,74,24,10,ILI9341_BLACK);tft.setCursor(210, 200);tft.print("Finir");
-  tft.fillRoundRect(10,105,45,24,10,ILI9341_BLACK);tft.setCursor(15, 110);tft.print("10$");
-  tft.fillRoundRect(85,105,45,24,10,ILI9341_BLACK);tft.setCursor(90, 110);tft.print("20$");
-  tft.fillRoundRect(165,105,45,24,10,ILI9341_BLACK);tft.setCursor(170, 110);tft.print("50$");
-  tft.fillRoundRect(240,105,55,24,10,ILI9341_BLACK);tft.setCursor(245, 110);tft.print("100$");
+  tft.fillRoundRect(205,195,94,24,10,ILI9341_BLACK);tft.setCursor(210, 200);tft.print("Valider");
+  tft.fillRoundRect(10,95,45,24,10,ILI9341_BLACK);tft.setCursor(15, 100);tft.print("10$");
+  tft.fillRoundRect(85,95,45,24,10,ILI9341_BLACK);tft.setCursor(90, 100);tft.print("20$");
+  tft.fillRoundRect(165,95,45,24,10,ILI9341_BLACK);tft.setCursor(170, 100);tft.print("50$");
+  tft.fillRoundRect(240,95,55,24,10,ILI9341_BLACK);tft.setCursor(245, 100);tft.print("100$");
+  tft.fillRoundRect(70,135,165,24,10,ILI9341_BLACK);tft.setCursor(75, 140);tft.print("Autre montant");
   while(testouch==false){
     boolean touch = ts.touched();
     TS_Point p = ts.getPoint();
-    if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){
-    menu();
+    if(touch && p.x>500 && p.x<900 && p.y>1600 &&p.y<1900){
+    soldeTemp=soldeTemp+10;
     delay(100);
-    testouch=true;
     }
-    if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){
-    menu();
+    if(touch && p.x>1300 && p.x<1800 && p.y>1600 &&p.y<1900){
+    soldeTemp=soldeTemp+20;
     delay(100);
-    testouch=true;
     }
-    if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){
-    menu();
+    if(touch && p.x>2200 && p.x<2700 && p.y>1600 &&p.y<1900){
+    soldeTemp=soldeTemp+50;
     delay(100);
-    testouch=true;
+    }
+    if(touch && p.x>3100 && p.x<3600 && p.y>1600 &&p.y<1900){
+    soldeTemp=soldeTemp+100;
+    delay(100);
+    }
+    if(touch && p.x>2300 && p.x<2700 && p.y>1100 &&p.y<3000){
+    autreMontant();
+    delay(100);
     }
     if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){
     menu();
@@ -198,9 +169,10 @@ void depot(){
   tft.fillScreen(ILI9341_WHITE);
   tft.setTextColor(ILI9341_BLACK);
   tft.setCursor(110, 10);tft.print("Depot");
+  tft.setCursor(10, 30);tft.print("Veuillez inserer vos \n billets");
   tft.setTextColor(ILI9341_WHITE);
   tft.fillRoundRect(5,195,94,24,10,ILI9341_BLACK);tft.setCursor(10, 200);tft.print("Annuler");
-  tft.fillRoundRect(205,195,94,24,10,ILI9341_BLACK);tft.setCursor(210, 200);tft.print("Finir");
+  tft.fillRoundRect(205,195,94,24,10,ILI9341_BLACK);tft.setCursor(210, 200);tft.print("Valider");
   while(testouch==false){
     boolean touch = ts.touched();
     TS_Point p = ts.getPoint();
@@ -240,4 +212,84 @@ unsigned long aurevoir(){
   tft.setCursor(10, 110);tft.print("Au revoir !");
   delay(2000);
   insertion();
+}
+void bienvenue(){
+
+}
+unsigned long texteCode(bool correct){
+  if (correct==true){
+    tft.fillScreen(ILI9341_WHITE);
+    tft.setTextColor(ILI9341_BLACK);
+    tft.setCursor(10, 110);tft.print("Code pas bon");
+    delay(1000);
+    menu();
+  }
+  else{
+    tft.fillScreen(ILI9341_WHITE);
+    tft.setTextColor(ILI9341_BLACK);
+    tft.setCursor(10, 110);tft.print("Code pas bon");
+    delay(1000);
+    code();
+  }
+}
+unsigned long envoieMessage(char message[], int x){
+  char tempMessage[]="";
+  tft.fillScreen(ILI9341_WHITE);
+  tft.setTextColor(ILI9341_BLACK);
+  int tempInt=strlen(message);
+  while (tempInt>26){
+    for(int i=0;i<strlen(message);i++){
+      if(&message[strlen(message)-i]==" "){
+        envoieMessage(tempMessage,x+10);
+        tempInt=tempInt-strlen(tempMessage);
+        char tempMessage[]="";
+      }
+      else{
+        tempMessage[i]=&message[strlen(message)-i];
+      }
+    }
+  }
+  int y=5+(310-(12*strlen(message)-2))/2;
+  tft.setCursor(x,y);
+  tft.print(message);
+}
+void autreMontant(){
+  bool testouch=false;
+  int montant=10;
+  tft.fillScreen(ILI9341_WHITE);
+  tft.setTextColor(ILI9341_BLACK);
+  tft.setCursor(110, 10);tft.print("Retrait");
+  tft.setCursor(10, 30);tft.print("Combien voulez vous \n retirer?");
+  tft.setTextColor(ILI9341_WHITE);
+  tft.setTextSize(3);
+  tft.fillRoundRect(215,105,30,30,10,ILI9341_BLACK);tft.setCursor(222, 110);tft.print("+");
+  tft.fillRoundRect(75,105,30,30,10,ILI9341_BLACK);tft.setCursor(82, 110);tft.print("-");
+  tft.fillRoundRect(115,105,94,30,10,ILI9341_BLACK);tft.setCursor(120, 110);tft.print(montant);tft.print("$");
+  tft.setTextSize(2);
+  tft.fillRoundRect(5,195,94,24,10,ILI9341_BLACK);tft.setCursor(10, 200);tft.print("Annuler");
+  tft.fillRoundRect(205,195,94,24,10,ILI9341_BLACK);tft.setCursor(210, 200);tft.print("Valider");
+  while(testouch==false){
+    boolean touch = ts.touched();
+    TS_Point p = ts.getPoint();
+    if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){
+    retrait();
+    delay(100);
+    testouch=true;
+    }
+    if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){
+    retrait();
+    delay(100);
+    testouch=true;
+    }
+    if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){
+    montant=montant-10;
+    autreMontant();
+    delay(100);
+    }
+    if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){
+    montant=montant+10;
+    autreMontant();
+    delay(100);
+    }
+  }
 }

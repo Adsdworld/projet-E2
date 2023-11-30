@@ -8,23 +8,19 @@ int TimeoutArduinoUno=20000;
 #include "Adafruit_ILI9341.h"
 #include <XPT2046_Touchscreen.h>
 #include <SPI.h>
-#include <SoftwareSerial.h>
-const byte rxPin = 2;
-const byte txPin = 3;
 #define CS_PIN  7
 #define TFT_DC  9
 #define TFT_CS 10
 #define TFT_RST 8
 XPT2046_Touchscreen ts(CS_PIN);
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
-SoftwareSerial mySerial (rxPin, txPin);
 String ReadInstantMsgFromArduino(){
   String StringBuilder="";
   while(true){
-    if (0<mySerial.available()){
+    if (0<Serial.available()){
       delay(TimeoutMsgResponse); //laisser un peu de temps pour que le court message arrive
-      while(mySerial.available()>0){
-        char Serialdata =mySerial.read();
+      while(Serial.available()>0){
+        char Serialdata =Serial.read();
         StringBuilder+=String(Serialdata);
       }
       return StringBuilder;
@@ -34,8 +30,8 @@ String ReadInstantMsgFromArduino(){
 }
 
 void setup() {
-  mySerial.begin(9600);
   Serial.begin(115200);
+  Serial.print("DEMARRER");
   pinMode(TFT_CS, OUTPUT);
   digitalWrite(TFT_CS, HIGH);
   pinMode(CS_PIN, OUTPUT);
@@ -49,45 +45,43 @@ void setup() {
 }
 
 void loop() {
-  if (0<mySerial.available()){
-    //mySerial.flush();
+  if (0<Serial.available()){
+    Serial.flush();
     String StringBuilder="";
     delay(TimeoutMsgResponse); //laisser un peu de temps pour que le court message arrive
-    while(mySerial.available()>0){
-      char Serialdata =mySerial.read();
+    while(Serial.available()>0){
+      char Serialdata =Serial.read();
       StringBuilder+=String(Serialdata);
     }
     if (StringBuilder==String("START")){//affiche une animation cool de démarrage
-      Serial.print("message recu: ");
-      Serial.print(StringBuilder);
-      mySerial.print("OK");
+      Serial.print("OK");
       Start();
-      mySerial.print("STARTED");
+      Serial.print("STARTED");
     }
     else if(StringBuilder==String("CONNECTING")){
-      mySerial.print("OK");
+      Serial.print("OK");
       Connecting();
     }
     else if (StringBuilder==String("WELCOME")){//affiche une animation cool de démarrage
-      mySerial.print("OK");
+      Serial.print("OK");
       Welcome();
-      mySerial.print("TOUCH");
+      Serial.print("TOUCH");
       menu();
     }
     else if(StringBuilder==String("RFID")){
-      mySerial.print("OK");
+      Serial.print("OK");
       RFID();
     }
     else if(StringBuilder.charAt(0)=='D'){
-      mySerial.print("OK");
+      Serial.print("OK");
       DigiCode(StringBuilder);
     }
     else if(StringBuilder==String("DATABASE")){
-      mySerial.print("OK");
+      Serial.print("OK");
       DataBase();
     }
     else if(StringBuilder==String("AUREVOIR")){
-      mySerial.print("OK");
+      Serial.print("OK");
       aurevoir("AUREVOIR MSG");
     }
   }
@@ -102,7 +96,7 @@ void Start(){
       aurevoir("Start");
       return;
     }
-    mySerial.print("KA");
+    Serial.print("KA");
   }
 }
 void Connecting(){
@@ -123,7 +117,7 @@ void Welcome(){
         return;
       }
     }
-    mySerial.print("KA");
+    Serial.print("KA");
   }
 }
 void RFID(){
