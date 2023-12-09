@@ -49,9 +49,8 @@ String readMsgFromSlaveWithTimeout() {
           receivedMessage += String(serialData);
         }
         Serial.println("\n***Message reçu du Slave:"+receivedMessage+"\n");
-        if (receivedMessage=="KA" || receivedMessage=="KAKA"){
+        if (receivedMessage=="KA"){
           Timeout=millis()+SlaveTimeout;
-          Serial.println("Reseting Timeout");
         }
         else{
           return receivedMessage;
@@ -93,6 +92,7 @@ void COMSetup() {
 * WIFI:                                                                                                                                 *
 *   Contient les Librairies et Variables nécessaires pour le Wifi.                                                                      *
 ****************************************************************************************************************************************/
+/*
 #include <ESPping.h>
 #include <ping.h>
 #include <ArduinoJson.h>
@@ -103,21 +103,17 @@ void COMSetup() {
 WiFiClient client;
 #define WIFI_SSID "Redmi Note 8 Pro"
 #define WIFI_PASS "asx135bko"
-String data="";
+String data;
 String server="projet-e2-eseo.000webhostapp.com";
 const char* host = "www.google.com";
+//String IPAdress;
 void WIFISetup(){
   WiFi.begin(WIFI_SSID, WIFI_PASS);
-  Serial.println("Connection au wifi");
   while (WiFi.status() != WL_CONNECTED) {
-    Shiny(1, 250);
+    Shiny(1, 500);
   }
-  Serial.println("Connecté ! Adresse IP : ");
-  Serial.println(WiFi.localIP());
+  //IPAdress=String(WiFi.localIP());
 }
-
-
-
 bool IsConnectionActive(){
   if (client.connect(host, 80)) {
     if (client.println("PING / HTTP/1.1\r\nHost: www.google.com\r\n\r\n") > 0) {
@@ -196,7 +192,7 @@ int ExtractFieldValue(String dataReceived, String fieldName) {
     return -1; // Champ non trouvé, renvoie une valeur par défaut
   }
 }
-
+*/
 /****************************************************************************************************************************************
 * DIGICODE:                                                                                                                             *
 *   ???                                                                                                                                 *
@@ -206,7 +202,7 @@ int ExtractFieldValue(String dataReceived, String fieldName) {
 * RFID:                                                                                                                                 *
 *   ???                                                                                                                                 *
 ****************************************************************************************************************************************/
-
+/*
 #include <SPI.h> // SPI
 #include <MFRC522.h> //RFID
 #define SS_PIN D10 //Use D before for the WIFI CARD
@@ -234,14 +230,13 @@ String GetId() {
   }
   return GetId();
 }
-
+*/
 /****************************************************************************************************************************************
 * DISTRIBUTEUR:                                                                                                                         *
 *   ???                                                                                                                                 *
 ****************************************************************************************************************************************/
-void setup() { 
-  delay(5000);
-  COMSetup(); //mettre en premier pour le Serial.begin
+void setup() {
+  COMSetup();
   pinMode(LED_BUILTIN, OUTPUT);
   while(true){
     sendMsgToSlaveWithConfirmation("START");//affiche une animation cool de démarrage
@@ -250,53 +245,16 @@ void setup() {
     }
   }
   sendMsgToSlaveWithConfirmation("CONNECTING"); //Affiche un écran dynamique de connection en cours au wifi
-  WIFISetup(); 
-  sendMsgToSlaveWithConfirmation("CONNECTED");//Envoie la conifirmation de connection
+  //WIFISetup(); 
+  delay(10000);
+  sendMsgToSlave("CONNECTED");//Envoie la conifirmation de connection
   //RFIDsetup();
 }
 
 
 //envoie du dictionnaire à l'écran et ensuite il utilise la fonction findfiel pour trouver les valeurs
 void loop() {
-  while(true){
-    sendMsgToSlaveWithConfirmation("WELCOME");//Affiche un écran de bienvenue sur le distributeur, tant que le screen n'est pas toucher attendre puis
-    ArduinoUnoData=readMsgFromSlaveWithTimeout();
-    if (ArduinoUnoData=="TOUCH"){
-      break;
-    }
-  }
-  sendMsgToSlaveWithConfirmation("RFID"); //Affiche un écran demandant d'aprocher le badge RFID
-  //carte_id=function to get RFID with a TimeOut
-  Serial.print("RFIDED");
-  sendMsgToSlaveWithConfirmation("D0"); //INteraction écran digicode à develloper
-  String UserCode;//=digicode code
-  sendMsgToSlaveWithConfirmation("DATABASE");
-  data=ReceiveDataFromDatabase(carte_id);
-  Serial.print("DATABASED");
-  int DatabaseCode=ExtractFieldValue(data, "carte_code");
-  if (String(DatabaseCode)==String(UserCode)){
-    sendMsgToSlaveWithConfirmation("AUTHENTIFICATED");
-    while(true){
-      sendMsgToSlaveWithConfirmation("MENU"); //Affiche le menu
-      ArduinoUnoData=readMsgFromSlaveWithTimeout();
-      if (ArduinoUnoData=="RETRAIT"){
-
-      }
-      else if(ArduinoUnoData=="DEPOT"){
-
-      }
-      else if(ArduinoUnoData=="VIREMENT"){
-
-      }
-      else if(ArduinoUnoData=="LOGOUT"){
-        sendMsgToSlaveWithConfirmation("GOODBYE");
-        break;
-      }
-    }
-  }
-  else{
-    sendMsgToSlaveWithConfirmation("DENIED");
-  }
+  Serial.println("Entering void loop");
 }
 
 

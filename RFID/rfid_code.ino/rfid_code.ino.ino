@@ -1,8 +1,8 @@
 #include <SPI.h> // SPI
 #include <MFRC522.h> //RFID
 
-#define SS_PIN 10
-#define RST_PIN 9
+#define SS_PIN D10
+#define RST_PIN D9
 
 // Déclaration
 MFRC522 rfid(SS_PIN, RST_PIN);

@@ -1,3 +1,11 @@
+#include <SoftwareSerial.h>
+
+const byte rxPin = D6;
+const byte txPin = D7;
+
+// Set up a new SoftwareSerial object
+SoftwareSerial mySerial (rxPin, txPin);
+
 /****************************************************************************************************************************************
 * Main:                                                                                                                                 *
 *   Contient les Variables essentiels.                                                                                                  *
@@ -23,70 +31,45 @@ void Shiny(int nb, int ms){
 * UART COMMUNICATION:                                                                                                                   *
 *   Contient les fonctions de communications                                                                                            *
 ****************************************************************************************************************************************/
-#include <SoftwareSerial.h>
-#define rxPin D6
-#define txPin D7
-int CommunicationDelay=1000;
-int ConsoleRefreshDelay=1000;
-int SlaveTimeout=60000;
-SoftwareSerial mySerial (rxPin, txPin);
-
-void sendMsgToSlave(String message) {
-  mySerial.print(message);
-  Serial.println("Une message à été envoyé:"+message);
-  delay(CommunicationDelay);
-}
-String readMsgFromSlaveWithTimeout() {
-    int Timeout=millis()+SlaveTimeout;
-    String receivedMessage = "";
-    Serial.println("\n***Waiting for data available from Slave with Timeout:"+String(SlaveTimeout)+"ms");
-    while (millis()<Timeout){
-      if (mySerial.available()>0){
-        Serial.print("New data available from Slave");
-        delay(CommunicationDelay); // Wait for the short message to arrive
-        while (mySerial.available() > 0) {
-          char serialData = mySerial.read();
-          receivedMessage += String(serialData);
-        }
-        Serial.println("\n***Message reçu du Slave:"+receivedMessage+"\n");
-        if (receivedMessage=="KA" || receivedMessage=="KAKA"){
-          Timeout=millis()+SlaveTimeout;
-          Serial.println("Reseting Timeout");
-        }
-        else{
-          return receivedMessage;
-        }
+void SendMsgToArduino(String Message){
+  while(true) {
+    mySerial.flush();
+    mySerial.print(Message);
+    delay(TimeoutMsgResponse);
+    if (0<mySerial.available()){
+      String StringBuilder="";
+      while(mySerial.available()>0){
+        char Serialdata =mySerial.read();
+        StringBuilder+=String(Serialdata);
       }
-  }
-  return "KO";
-}
-void sendMsgToSlaveWithConfirmation(String message) {
-  Serial.println("\n***Sending '"+message+"' with confirmation to Slave");
-  String receivedMessage = "";
-  while (true){
-    mySerial.print(message);
-    delay(CommunicationDelay*3);
-    if (mySerial.available()>0){
-      receivedMessage = "";
-      delay(CommunicationDelay); // Wait for the short message to arrive
-      Serial.print("New data available from Slave");
-      while (mySerial.available() > 0) {
-        char serialData = mySerial.read();
-        receivedMessage += String(serialData);
-      }
-      if (receivedMessage=="OK"){
-        Serial.println("\n***Successfuly sended '"+message+"' with confirmation to Slave");
-        return;
+      if (StringBuilder==String("OK")){
+        break;
       }
     }
   }
+  return;
 }
-
-void COMSetup() {
-  pinMode(rxPin, INPUT);
-  pinMode(txPin, OUTPUT);
-  mySerial.begin(9600);
-  Serial.begin(115200);
+String ReadMsgFromArduino(){
+  int Timeout=millis()+TimeoutArduinoUno;
+  String StringBuilder="";
+  while(millis()<Timeout){
+    if (0<mySerial.available()){
+      delay(TimeoutMsgResponse); //laisser un peu de temps pour que le court message arrive
+      while(mySerial.available()>0){
+        char Serialdata =mySerial.read();
+        StringBuilder+=String(Serialdata);
+      }
+      if (0==mySerial.available()){
+        if (StringBuilder=="KA"){
+          Timeout=millis()+TimeoutArduinoUno; //sorte de Keep Alive
+        }
+        else{
+          return StringBuilder;
+        }
+      }
+    }
+  }
+  return "Arduino-KO";
 }
 
 /****************************************************************************************************************************************
@@ -103,21 +86,17 @@ void COMSetup() {
 WiFiClient client;
 #define WIFI_SSID "Redmi Note 8 Pro"
 #define WIFI_PASS "asx135bko"
-String data="";
+String data;
 String server="projet-e2-eseo.000webhostapp.com";
 const char* host = "www.google.com";
+//String IPAdress;
 void WIFISetup(){
   WiFi.begin(WIFI_SSID, WIFI_PASS);
-  Serial.println("Connection au wifi");
   while (WiFi.status() != WL_CONNECTED) {
-    Shiny(1, 250);
+    Shiny(1, 500);
   }
-  Serial.println("Connecté ! Adresse IP : ");
-  Serial.println(WiFi.localIP());
+  //IPAdress=String(WiFi.localIP());
 }
-
-
-
 bool IsConnectionActive(){
   if (client.connect(host, 80)) {
     if (client.println("PING / HTTP/1.1\r\nHost: www.google.com\r\n\r\n") > 0) {
@@ -206,7 +185,6 @@ int ExtractFieldValue(String dataReceived, String fieldName) {
 * RFID:                                                                                                                                 *
 *   ???                                                                                                                                 *
 ****************************************************************************************************************************************/
-
 #include <SPI.h> // SPI
 #include <MFRC522.h> //RFID
 #define SS_PIN D10 //Use D before for the WIFI CARD
@@ -234,51 +212,52 @@ String GetId() {
   }
   return GetId();
 }
-
 /****************************************************************************************************************************************
 * DISTRIBUTEUR:                                                                                                                         *
 *   ???                                                                                                                                 *
 ****************************************************************************************************************************************/
-void setup() { 
-  delay(5000);
-  COMSetup(); //mettre en premier pour le Serial.begin
+
+
+
+void setup() {
+  //Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
   while(true){
-    sendMsgToSlaveWithConfirmation("START");//affiche une animation cool de démarrage
-    if (readMsgFromSlaveWithTimeout()==String("STARTED")){ //Attends que l'arduino est finit son animation peut, permet le KeepAlive
+    SendMsgToArduino("START");//affiche une animation cool de démarrage
+    if (ReadMsgFromArduino()=="STARTED"){ //Attends que l'arduino est finit son animation peut, permet le KeepAlive
       break;
     }
   }
-  sendMsgToSlaveWithConfirmation("CONNECTING"); //Affiche un écran dynamique de connection en cours au wifi
+  SendMsgToArduino("CONNECTING"); //Affiche un écran dynamique de connection en cours au wifi
   WIFISetup(); 
-  sendMsgToSlaveWithConfirmation("CONNECTED");//Envoie la conifirmation de connection
-  //RFIDsetup();
+  Serial.print("CONNECTED");//Envoie la conifirmation de connection
+  RFIDsetup();
 }
 
 
 //envoie du dictionnaire à l'écran et ensuite il utilise la fonction findfiel pour trouver les valeurs
 void loop() {
   while(true){
-    sendMsgToSlaveWithConfirmation("WELCOME");//Affiche un écran de bienvenue sur le distributeur, tant que le screen n'est pas toucher attendre puis
-    ArduinoUnoData=readMsgFromSlaveWithTimeout();
+    SendMsgToArduino("WELCOME");//Affiche un écran de bienvenue sur le distributeur, tant que le screen n'est pas toucher attendre puis
+    ArduinoUnoData=ReadMsgFromArduino();
     if (ArduinoUnoData=="TOUCH"){
       break;
     }
   }
-  sendMsgToSlaveWithConfirmation("RFID"); //Affiche un écran demandant d'aprocher le badge RFID
+  SendMsgToArduino("RFID"); //Affiche un écran demandant d'aprocher le badge RFID
   //carte_id=function to get RFID with a TimeOut
   Serial.print("RFIDED");
-  sendMsgToSlaveWithConfirmation("D0"); //INteraction écran digicode à develloper
+  SendMsgToArduino("D0"); //INteraction écran digicode à develloper
   String UserCode;//=digicode code
-  sendMsgToSlaveWithConfirmation("DATABASE");
+  SendMsgToArduino("DATABASE");
   data=ReceiveDataFromDatabase(carte_id);
   Serial.print("DATABASED");
   int DatabaseCode=ExtractFieldValue(data, "carte_code");
   if (String(DatabaseCode)==String(UserCode)){
-    sendMsgToSlaveWithConfirmation("AUTHENTIFICATED");
+    SendMsgToArduino("AUTHENTIFICATED");
     while(true){
-      sendMsgToSlaveWithConfirmation("MENU"); //Affiche le menu
-      ArduinoUnoData=readMsgFromSlaveWithTimeout();
+      SendMsgToArduino("MENU"); //Affiche le menu
+      ArduinoUnoData=ReadMsgFromArduino();
       if (ArduinoUnoData=="RETRAIT"){
 
       }
@@ -289,13 +268,13 @@ void loop() {
 
       }
       else if(ArduinoUnoData=="LOGOUT"){
-        sendMsgToSlaveWithConfirmation("GOODBYE");
+        SendMsgToArduino("GOODBYE");
         break;
       }
     }
   }
   else{
-    sendMsgToSlaveWithConfirmation("DENIED");
+    SendMsgToArduino("DENIED");
   }
 }
 

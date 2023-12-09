@@ -8,8 +8,8 @@ char hexaBouton[Ligne][Colonne] = {
   {'*', '0', '#', 'D'}
 };
 
-int lignesPins[Ligne] = {D7, D6, D5, D4}; // Broches pour les lignes (D0 à D3)
-int colonnesPins[Colonne] = {D3, D2, D1, D0}; // Broches pour les colonnes (D4 à D7)
+int lignesPins[Ligne] = {D15, D8, D7, D6}; // Broches pour les lignes (D0 à D3)
+int colonnesPins[Colonne] = {D5, D4, D3, D2}; // Broches pour les colonnes (D4 à D7)
 
 void setup() {
   // Initialiser les broches de colonne en sortie avec HIGH
