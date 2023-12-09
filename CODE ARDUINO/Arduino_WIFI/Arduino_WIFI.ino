@@ -42,6 +42,7 @@ String readMsgFromSlaveWithTimeout() {
     Serial.println("\n***Waiting for data available from Slave with Timeout:"+String(SlaveTimeout)+"ms");
     while (millis()<Timeout){
       if (mySerial.available()>0){
+        receivedMessage = "";
         Serial.print("New data available from Slave");
         delay(CommunicationDelay); // Wait for the short message to arrive
         while (mySerial.available() > 0) {
@@ -65,7 +66,7 @@ void sendMsgToSlaveWithConfirmation(String message) {
   String receivedMessage = "";
   while (true){
     mySerial.print(message);
-    delay(CommunicationDelay*3);
+    delay(CommunicationDelay*5);
     if (mySerial.available()>0){
       receivedMessage = "";
       delay(CommunicationDelay); // Wait for the short message to arrive
@@ -173,6 +174,37 @@ String ReceiveDataFromDatabase(String carte_id){
     return data_received;
   }
   return "null";
+}
+void ModifyDataToDatabase(String carte_id, String solde, String carte_code){
+  if(IsConnectionActive()){
+    Serial.println("Arduino>>>Server (active connection>>>execute function)");
+    data = "carte_id=" + String(carte_id) + "&solde=" + String(solde) + "&carte_code=" + String(carte_code);
+
+    String url = "http://" + server + "/edit.php";
+    HTTPClient http;
+    http.begin(client, url);
+    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+
+    int httpCode = http.POST(data);
+    if (httpCode == HTTP_CODE_OK) {
+      Serial.println("Data sent successfully.");
+    } else {
+      Serial.println("HTTP POST FAILED, check wireless connection");
+      Serial.println(httpCode);
+    }
+    if (httpCode == HTTP_CODE_MOVED_PERMANENTLY || httpCode == HTTP_CODE_FOUND) {
+      String newUrl = http.header("Location");
+      Serial.println(newUrl);
+      // Effectuez une nouvelle requête vers la nouvelle URL
+      http.end();
+      http.begin(client, newUrl);
+      http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+      httpCode = http.POST(data);
+    }
+    http.end();
+  }
+  
+  // Faire une vérification en gettant les données et vérifiant si elles match parfaitement.
 }
 int ExtractFieldValue(String dataReceived, String fieldName) {
   const size_t capacity = JSON_OBJECT_SIZE(4) + 60; //ici il y a 4 valeurs: id, carte_id, solde, carte_code >>> à ajuster en fonction des données reçus

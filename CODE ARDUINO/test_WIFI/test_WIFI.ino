@@ -14,10 +14,10 @@ String readMsgFromSlave() {
   String receivedMessage = "";
   while (!mySerial.available()) {
     Serial.println("Waiting for data available from Slave");
-    delay(ConsoleRefreshDelay);
+    delay(ConsoleRefreshDelay*3);
   }
   Serial.println("\nNew data available from Slave");
-  delay(CommunicationDelay); // Wait for the short message to arrive
+  delay(CommunicationDelay/4); // Wait for the short message to arrive
   while (mySerial.available() > 0) {
     char serialData = mySerial.read();
     receivedMessage += String(serialData);
@@ -31,7 +31,8 @@ void sendMsgToSlaveWithConfirmation(String message) {
     mySerial.print(message);
     delay(CommunicationDelay*3);
     if (mySerial.available()>0){
-      delay(CommunicationDelay); // Wait for the short message to arrive
+      receivedMessage = "";
+      delay(CommunicationDelay/4); // Wait for the short message to arrive
       Serial.print("New data available from Slave");
       while (mySerial.available() > 0) {
         char serialData = mySerial.read();
@@ -45,13 +46,49 @@ void sendMsgToSlaveWithConfirmation(String message) {
   }
 }
 
+String readMsgFromSlaveWithTimeout() {
+    int Timeout=millis()+SlaveTimeout;
+    String receivedMessage = "";
+    Serial.println("\n***Waiting for data available from Slave with Timeout:"+String(SlaveTimeout)+"ms");
+    while (millis()<Timeout){
+      //delay(CommunicationDelay);
+      //Serial.println(""+String(millis())+" < "+Timeout);
+      if (mySerial.available()>0){
+        receivedMessage = "";
+        Serial.print("New data available from Slave");
+        delay(CommunicationDelay/4); // Wait for the short message to arrive
+        while (mySerial.available() > 0) {
+          char serialData = mySerial.read();
+          receivedMessage += String(serialData);
+        }
+        Serial.println("\n***Message reçu du Slave:"+receivedMessage+"\n");
+        if (receivedMessage=="KA" || receivedMessage=="KAKA"){
+          Timeout=millis()+SlaveTimeout;
+          Serial.println("Reseting Timeout");
+        }
+        else{
+          return receivedMessage;
+        }
+      }
+  }
+  return "KO";
+}
+
 void setup() {
+  delay(5000);
   pinMode(rxPin, INPUT);
   pinMode(txPin, OUTPUT);
   mySerial.begin(9600);
   Serial.begin(115200);
 }
 void loop() {
-  sendMsgToSlaveWithConfirmation("START");
+  while(true){
+    sendMsgToSlaveWithConfirmation("MENU");//affiche une animation cool de démarrage
+    String msg = readMsgFromSlaveWithTimeout();
+    Serial.print("Retour du read with timeout: "+msg);
+    if (msg==String("MENUED")){ //Attends que l'arduino est finit son animation peut, permet le KeepAlive
+      break;
+    }
+  }
   delay(10000);
 }
