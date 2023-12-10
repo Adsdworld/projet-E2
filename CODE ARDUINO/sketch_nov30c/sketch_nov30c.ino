@@ -14,26 +14,28 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 int CommunicationDelay=1000;
 int ConsoleRefreshDelay=1000;
 int SlaveTimeout=60000;
+bool dansMenu=false;
 unsigned long solde=65536;
 unsigned long Timeout;
 SoftwareSerial mySerial (rxPin, txPin);
 
 void sendMsgToMaster(String message) {
   mySerial.print(message);
-  Serial.println("Une message à été envoyé:"+message);
+  Serial.println("Un message à été envoyé:"+message);
   delay(CommunicationDelay*3);
 }
 void sendKeepAlive() {
   mySerial.print("KA");
+  Serial.print("Keep alive");
 }
 String readMsgFromMaster() {
-  String receivedMessage = "";
+   String receivedMessage = "";
   Serial.println("\n***Waiting for data available from Master");
   while (!mySerial.available()) {
 
   }
   Serial.print("New data available from Master");
-  delay(CommunicationDelay/4); // Wait for the short message to arrive
+  delay(CommunicationDelay/3); // Wait for the short message to arrive
   while (mySerial.available() > 0) {
     char serialData = mySerial.read();
     receivedMessage += String(serialData);
@@ -68,7 +70,10 @@ void loop() {
     msgEcran("Connection started");
     sendMsgToMaster("STARTED");
   }
-  if (receivedMessage == "MENU") {
+  if (receivedMessage == "MENU" or dansMenu==true) {
+    sendMsgToMaster("OK");
+    dansMenu=true;
+    String user=readMsgFromMaster();
     sendMsgToMaster("OK");
     menu();
     sendMsgToMaster("MENUED");
@@ -100,6 +105,7 @@ String InstantreadMsgFromMaster() {
 //Fonction Ecran
 //==============================================================================
 void menu(){
+  
   bool testouch=false;
   Timeout=millis()+(SlaveTimeout/6);
   tft.fillScreen(ILI9341_WHITE);
@@ -145,6 +151,7 @@ void menu(){
   }
 }
 void virement(){
+  
   bool testouch=false;
   tft.fillScreen(ILI9341_WHITE);
   tft.setTextColor(ILI9341_BLACK);
@@ -220,6 +227,7 @@ void retrait(){
   }
 }
 void depot(){
+
   bool testouch=false;
   tft.fillScreen(ILI9341_WHITE);
   tft.setTextColor(ILI9341_BLACK);
@@ -247,7 +255,6 @@ unsigned long aurevoir(){
   tft.setTextColor(ILI9341_BLACK);
   tft.setCursor(10, 110);tft.print("Au revoir !");
   delay(2000);
-  menu();
 }
 void autreMontant(){
   bool testouch=false;
