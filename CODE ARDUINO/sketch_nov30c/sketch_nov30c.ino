@@ -70,7 +70,6 @@ void loop() {
   }
   if (receivedMessage == "MENU") {
     sendMsgToMaster("OK");
-    Serial.println("Menu started");
     menu();
     sendMsgToMaster("MENUED");
   }
@@ -122,7 +121,7 @@ void menu(){
     }
     boolean touch = ts.touched();
     TS_Point p = ts.getPoint();
-    Serial.print("x:"+String(p.x)+"y:"+String(p.y));
+    //Serial.print("x:"+String(p.x)+"y:"+String(p.y));
     if(touch && p.x>2300 && p.x<2600 && p.y>450 &&p.y<1500){
     retrait();
     testouch=true;
