@@ -1,14 +1,14 @@
 #include <SoftwareSerial.h>
-#define rxPin 2
-#define txPin 3
+#define rxPin 22
+#define txPin 23
 #include "Adafruit_GFX.h"
 #include "Adafruit_ILI9341.h"
 #include <XPT2046_Touchscreen.h>
 #include <SPI.h>
-#define CS_PIN  7
-#define TFT_DC  9
-#define TFT_CS 10
-#define TFT_RST 8
+#define CS_PIN  47
+#define TFT_DC  49
+#define TFT_CS 53
+#define TFT_RST 48
 XPT2046_Touchscreen ts(CS_PIN);
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 int CommunicationDelay=1000;
@@ -43,7 +43,61 @@ String readMsgFromMaster() {
   Serial.println("\n***Message reçu du Master:"+receivedMessage+"\n");
   return receivedMessage;
 }
+/*================================================================================
+      Digicode
+=================================================================================*/
+const int Ligne = 4;
+const int Colonne = 4;
+char hexaBouton[Ligne][Colonne] = {
+  {'1', '2', '3', 'a'},
+  {'4', '5', '6', 'b'},
+  {'7', '8', '9', 'c'},
+  {'*', '0', '#', 'd'}
+};
+int lignesPins[Ligne] = {30, 31, 32, 33}; // Broches pour les lignes (D0 à D3)
+int colonnesPins[Colonne] = {34, 35, 36, 37}; // Broches pour les colonnes (D4 à D7)
+//int lignesPins[Ligne] = {D7, D6, D5, D4}; // Broches pour les lignes (D0 à D3)
+//int colonnesPins[Colonne] = {D3, D2, D1, D0}; // Broches pour les colonnes (D4 à D7)
+String Digicode(){
+  String code="";
+  String a="";
+  while (code.length() < Ligne) {
+    //Serial.println("1 check effectué");
+    for (int i = 0; i < Colonne; i++) {
+      // Activer la colonne en cours
+      digitalWrite(colonnesPins[i], LOW);
+      // Lire les lignes
+      for (int j = 0; j < Ligne; j++) {
+        if (digitalRead(lignesPins[j]) == LOW) {
+          // Un bouton a été pressé dans la ligne j et la colonne i
+          char boutonPresse = hexaBouton[j][i];
+          if (boutonPresse=="a"||boutonPresse=="b"||boutonPresse=="c"||boutonPresse=="d"){
+            delay(100);
+          }
+          if (boutonPresse=="*"){
 
+          }
+          if (boutonPresse=="#"){
+            
+          }
+          code+=boutonPresse;
+          a="";
+          for (int k = 1; k <= code.length(); k++) {
+            a += "#";
+          }
+          Serial.println(a);
+          // Attendez que le bouton soit relâché
+          while (digitalRead(lignesPins[j]) == LOW) {
+            delay(10);
+          }
+        }
+      }
+      // Désactiver la colonne en cours
+      digitalWrite(colonnesPins[i], HIGH);
+    }
+  }
+  return code;
+}
 void setup() {
   delay(5000);
   pinMode(rxPin, INPUT);
@@ -54,16 +108,28 @@ void setup() {
   digitalWrite(TFT_CS, HIGH);
   pinMode(CS_PIN, OUTPUT);
   digitalWrite(CS_PIN, HIGH);
+  // Initialiser les broches de colonne en sortie avec HIGH
+  for (int i = 0; i < Colonne; i++) {
+    pinMode(colonnesPins[i], OUTPUT);
+    digitalWrite(colonnesPins[i], HIGH);
+  }
+  // Initialiser les broches de ligne avec une résistance de pull-up interne
+  for (int i = 0; i < Ligne; i++) {
+    pinMode(lignesPins[i], INPUT_PULLUP);
+  }
   tft.begin();
   ts.begin();
-  tft.setRotation(3);
-  ts.setRotation(4);
+  tft.setRotation(1);
+  ts.setRotation(2);
   tft.fillScreen(ILI9341_WHITE);
   tft.setTextSize(2);
 }
 
 void loop() {
-  String receivedMessage = readMsgFromMaster();
+  String code=Digicode();
+  Serial.print(code);
+  msgEcran(code);
+  /*String receivedMessage = readMsgFromMaster();
   if (receivedMessage == "START") {
     sendMsgToMaster("OK");
     Serial.println("animation de l'écran");
@@ -77,7 +143,7 @@ void loop() {
     sendMsgToMaster("OK");
     menu();
     sendMsgToMaster("MENUED");
-  }
+  }*/
 }
 unsigned long msgEcran(String message){
   tft.fillScreen(ILI9341_WHITE);
@@ -105,7 +171,6 @@ String InstantreadMsgFromMaster() {
 //Fonction Ecran
 //==============================================================================
 void menu(){
-  
   bool testouch=false;
   Timeout=millis()+(SlaveTimeout/6);
   tft.fillScreen(ILI9341_WHITE);
@@ -151,7 +216,6 @@ void menu(){
   }
 }
 void virement(){
-  
   bool testouch=false;
   tft.fillScreen(ILI9341_WHITE);
   tft.setTextColor(ILI9341_BLACK);
@@ -227,7 +291,6 @@ void retrait(){
   }
 }
 void depot(){
-
   bool testouch=false;
   tft.fillScreen(ILI9341_WHITE);
   tft.setTextColor(ILI9341_BLACK);
