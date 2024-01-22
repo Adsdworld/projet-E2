@@ -1,26 +1,65 @@
-#include "Adafruit_GFX.h"
-#include "Adafruit_ILI9341.h"
 #include <XPT2046_Touchscreen.h>
+#include <Adafruit_ILI9341.h>
+#include <Adafruit_GFX.h>
 #include <SPI.h>
 
-#define CS_PIN  47
+#define CS_PIN_TOUCH_SCREEN  47 //SS + CS = Slave Select
 #define TFT_DC  49
 #define TFT_CS 53
-#define TFT_RST 48
+#define RST_PIN 48
+
+// RST identique pour RST ECRAN & RFID
+
+#include <MFRC522.h> //RFID
+#define CS_PIN_RFID 43 //Use D before for the WIFI CARD
+#define RST_PIN_RFID 41 //Use D before for the WIFI CARD
+
+MFRC522 rfid(CS_PIN_RFID, RST_PIN_RFID);
+String carte_id;
+
+String GetId() {
+  while (!rfid.PICC_IsNewCardPresent()) {//il attends dans cette boucle, ajout de millis plus tard
+  }
+  if (!rfid.PICC_ReadCardSerial()) {
+    String id;
+    for (byte i = 0; i < 4; i++) {
+      id += String(rfid.uid.uidByte[i], HEX);
+    }
+    rfid.PICC_HaltA();     //permet d'arrêter la communication avec la carte
+    rfid.PCD_StopCrypto1();//permet d'arrêter la communication avec la carte
+    if(id==0000 || id=="0000"){
+      return GetId();
+    }else{
+      return id;
+    }
+  }
+  return GetId();
+}
+
+
+
+
+
 
 unsigned long solde = 32768;
 int soldeTemp=0;
 char nom[]="User";
-XPT2046_Touchscreen ts(CS_PIN);
-Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
+XPT2046_Touchscreen ts(CS_PIN_TOUCH_SCREEN);
+Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, RST_PIN);
 void setup() {
+  Serial.begin(115200);
+  SPI.begin();
+  rfid.PCD_Init();
+  pinMode(CS_PIN_RFID, OUTPUT);
+  digitalWrite(CS_PIN_RFID, HIGH);
+
   pinMode(TFT_CS, OUTPUT);
   digitalWrite(TFT_CS, HIGH);
-  pinMode(CS_PIN, OUTPUT);
-  digitalWrite(CS_PIN, HIGH);
+  pinMode(CS_PIN_TOUCH_SCREEN, OUTPUT);
+  digitalWrite(CS_PIN_TOUCH_SCREEN, HIGH);
   tft.begin();
   ts.begin();
-  Serial.begin(115200);
+  //Serial.begin(115200);
   tft.setRotation(1);
   ts.setRotation(2);
   tft.fillScreen(ILI9341_WHITE);
@@ -28,6 +67,11 @@ void setup() {
 }
 
 void loop() {
+   carte_id = GetId();
+   Serial.println(carte_id);
+
+  Serial.println("Normalement ensuite à l'écran");
+
   boolean istouched = ts.touched();
   TS_Point p = ts.getPoint();
   tft.fillRect(50, 180, 140, 60, ILI9341_WHITE);

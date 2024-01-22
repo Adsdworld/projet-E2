@@ -1,7 +1,7 @@
 #include <SPI.h> // SPI
 #include <MFRC522.h> //RFID
-#define SS_PIN D10 //Use D before for the WIFI CARD
-#define RST_PIN D9 //Use D before for the WIFI CARD
+#define SS_PIN 43 //Use D before for the WIFI CARD
+#define RST_PIN 41 //Use D before for the WIFI CARD
 
 MFRC522 rfid(SS_PIN, RST_PIN);
 String carte_id;
