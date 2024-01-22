@@ -158,8 +158,13 @@ void ModifyDataToDatabase(String carte_id, String solde, String carte_code){
 }
 
 void loop() {
-  ModifyDataToDatabase("ARTHUR", "1000000", "5555");
-    delay(100000);
+  delay(5000);
+  ReceiveDataFromDatabase("87l8h89");
+  delay(3000);
+  SendDataToDatabase("34o7a67", "12987", "1111");
+  delay(3000);
+  ModifyDataToDatabase("34o7a67", "1000000", "2222");
+  delay(100000);
   //int solde=ExtractFieldValue(ReceiveDataFromDatabase(123456789), "solde");
   //Serial.println(solde);
   //delay(20000);
