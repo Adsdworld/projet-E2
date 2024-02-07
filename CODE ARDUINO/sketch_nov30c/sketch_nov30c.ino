@@ -19,6 +19,9 @@ unsigned long solde=65536;
 unsigned long Timeout;
 SoftwareSerial mySerial (rxPin, txPin);
 
+
+
+
 void sendMsgToMaster(String message) {
   mySerial.print(message);
   Serial.println("Un message à été envoyé:"+message);

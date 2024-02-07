@@ -17,6 +17,51 @@
 MFRC522 rfid(CS_PIN_RFID, RST_PIN_RFID);
 String carte_id;
 
+//communication
+#include <SoftwareSerial.h>
+#define rxPin 14 // jour d'anniversaire de Martin & Arthur
+#define txPin 15 // mois d'anniversaire de Arthur & Martin
+int CommunicationDelay=1000;
+//int ConsoleRefreshDelay=1000;
+int SlaveTimeout=60000;
+SoftwareSerial mySerial (rxPin, txPin);
+void COMSetup() {
+  pinMode(rxPin, INPUT);
+  pinMode(txPin, OUTPUT);
+  mySerial.begin(9600);
+  //Serial.begin(115200);
+}
+
+void sendMsgToSlave(String message) {
+  mySerial.print(message);
+  Serial.println("Un message à été envoyé:"+message);
+  delay(CommunicationDelay*3);
+}
+void sendMsgToSlaveWithConfirmation(String message) {
+  Serial.println("\n***Sending '"+message+"' with confirmation to Slave");
+  String receivedMessage = "";
+  while (true){
+    mySerial.print(message);
+    delay(CommunicationDelay*3);
+    if (mySerial.available()>0){
+      receivedMessage = "";
+      delay(CommunicationDelay); // Wait for the short message to arrive
+      Serial.print("New data available from Slave");
+      while (mySerial.available() > 0) {
+        char serialData = mySerial.read();
+        receivedMessage += String(serialData);
+      }
+      if (receivedMessage=="OK"){
+        Serial.println("\n***Successfuly sended '"+message+"' with confirmation to Slave");
+        return;
+      } else {
+        Serial.println("\nMessage reçu:"+receivedMessage);
+      }
+    }
+    Serial.print(".");
+  }
+}
+
 String GetId() {
   while (!rfid.PICC_IsNewCardPresent()) {//il attends dans cette boucle, ajout de millis plus tard
   }
@@ -35,7 +80,47 @@ String GetId() {
   }
   return GetId();
 }
+const int Ligne = 4;
+const int Colonne = 4;
 
+char hexaBouton[Ligne][Colonne] = {
+  {'1', '2', '3', 'A'},
+  {'4', '5', '6', 'B'},
+  {'7', '8', '9', 'C'},
+  {'*', '0', '#', 'D'}
+};
+
+int lignesPins[Ligne] = {22, 24, 26, 28}; // Broches pour les lignes (D0 à D3)
+int colonnesPins[Colonne] = {30, 32, 34, 36};
+String getNumber(){
+  String boutonPresse;
+  bool play = true;
+  while (play){
+    for (int i = 0; i < Colonne; i++) {
+      // Activer la colonne en cours
+      digitalWrite(colonnesPins[i], LOW);
+      
+      // Lire les lignes
+      for (int j = 0; j < Ligne; j++) {
+        if (digitalRead(lignesPins[j]) == LOW) {
+          // Un bouton a été pressé dans la ligne j et la colonne i
+          boutonPresse = hexaBouton[j][i];
+          //Serial.print("\nbutton: "+boutonPresse);
+          play = false;
+          
+          // Attendez que le bouton soit relâché
+          while (digitalRead(lignesPins[j]) == LOW) {
+            delay(10);
+          }
+        }
+      }
+
+      // Désactiver la colonne en cours
+      digitalWrite(colonnesPins[i], HIGH);
+    }
+  }
+  return boutonPresse;
+}
 
 
 
@@ -47,6 +132,17 @@ char nom[]="User";
 XPT2046_Touchscreen ts(CS_PIN_TOUCH_SCREEN);
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, RST_PIN);
 void setup() {
+  for (int i = 0; i < Colonne; i++) {
+    pinMode(colonnesPins[i], OUTPUT);
+    digitalWrite(colonnesPins[i], HIGH);
+  }
+  // Initialiser les broches de ligne avec une résistance de pull-up interne
+  for (int i = 0; i < Ligne; i++) {
+    pinMode(lignesPins[i], INPUT_PULLUP);
+  }
+
+  COMSetup();
+
   Serial.begin(115200);
   SPI.begin();
   rfid.PCD_Init();
@@ -64,15 +160,20 @@ void setup() {
   ts.setRotation(2);
   tft.fillScreen(ILI9341_WHITE);
   tft.setTextSize(2);
+
+  Serial.println("La carte à démarré !");
+  sendMsgToSlaveWithConfirmation("Message de test pour la communication");
 }
 
 void loop() {
-   carte_id = GetId();
-   Serial.println(carte_id);
+  while (true){
+    sendMsgToSlave("m'entends tu? )");
+    delay(3000);
+  }
+  //carte_id = GetId();
+  //Serial.println(carte_id);
 
-  Serial.println("Normalement ensuite à l'écran");
-
-  boolean istouched = ts.touched();
+  /*boolean istouched = ts.touched();
   TS_Point p = ts.getPoint();
   tft.fillRect(50, 180, 140, 60, ILI9341_WHITE);
   tft.setTextColor(ILI9341_DARKGREEN);
@@ -82,7 +183,9 @@ void loop() {
     insertion();
   }
   istouched=false;
-  delay(100);
+  delay(100);*/
+  insertion();
+
 }
 void menu(){
   bool testouch=false;
@@ -127,10 +230,10 @@ void insertion(){
   tft.setTextColor(ILI9341_BLACK);
   tft.setCursor(100, 10);tft.print("Bienvenue");
   tft.setCursor(10, 110);tft.print("Veuillez scanner votre");tft.setCursor(10, 135);tft.print("carte");
-  while(testcarte==false){
-    testcarte=true;
-  }
-  delay(2000);
+  carte_id = GetId();
+  Serial.println(carte_id);
+  
+  //delay(10000);
   code();
 }
 void virement(){
@@ -238,8 +341,27 @@ void code(){
   tft.setCursor(10, 10);tft.print("Bonjour ");tft.print(nom);
   tft.setCursor(10, 35);tft.print("Veuillez rentrer votre"),tft.setCursor(10, 60);tft.print("code sur le digicode");
   tft.setTextColor(ILI9341_WHITE);
+  tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);
   tft.fillRoundRect(5,195,94,24,10,ILI9341_BLACK);tft.setCursor(10, 200);tft.print("Valider");
-  tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setTextSize(4);tft.setCursor(70, 110);tft.print("");tft.setTextSize(2);
+  String code;
+  String symbole = getNumber();
+  code += symbole;
+  tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setTextSize(4);tft.setCursor(70, 110);tft.print("*");
+  symbole = getNumber();
+  code += symbole;
+  tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.print("* *");
+  symbole = getNumber();
+  code += symbole;
+  tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.print("* * *");
+  symbole = getNumber();
+  code += symbole;
+  tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.print("* * * *");tft.setTextSize(2);
+
+  //tft.setCursor(?, ?);
+  //tft.fillRoundRect(?,?,?,?,?,ILI9341_BLACK);
+
+  
+  // base arduino wifi
   while(testcode==false){
     boolean touch = ts.touched();
     TS_Point p = ts.getPoint();
