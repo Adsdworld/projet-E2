@@ -18,22 +18,22 @@ MFRC522 rfid(CS_PIN_RFID, RST_PIN_RFID);
 String carte_id;
 
 //communication
-#include <SoftwareSerial.h>
-#define rxPin 14 // jour d'anniversaire de Martin & Arthur
-#define txPin 15 // mois d'anniversaire de Arthur & Martin
+//#include <SoftwareSerial.h>
+#define txPin 8 // mois d'anniversaire de Arthur & Martin
+#define rxPin 7 // jour d'anniversaire de Martin & Arthur
 int CommunicationDelay=1000;
 //int ConsoleRefreshDelay=1000;
 int SlaveTimeout=60000;
-SoftwareSerial mySerial (rxPin, txPin);
+//SoftwareSerial mySerial (rxPin, txPin);
 void COMSetup() {
   pinMode(rxPin, INPUT);
   pinMode(txPin, OUTPUT);
-  mySerial.begin(9600);
+  Serial3.begin(9600);
   //Serial.begin(115200);
 }
 
 void sendMsgToSlave(String message) {
-  mySerial.print(message);
+  Serial3.print(message);
   Serial.println("Un message à été envoyé:"+message);
   delay(CommunicationDelay*3);
 }
@@ -41,14 +41,15 @@ void sendMsgToSlaveWithConfirmation(String message) {
   Serial.println("\n***Sending '"+message+"' with confirmation to Slave");
   String receivedMessage = "";
   while (true){
-    mySerial.print(message);
+    Serial3.print(message);
     delay(CommunicationDelay*3);
-    if (mySerial.available()>0){
+    //delay(10);
+    if (Serial3.available()){
       receivedMessage = "";
       delay(CommunicationDelay); // Wait for the short message to arrive
       Serial.print("New data available from Slave");
-      while (mySerial.available() > 0) {
-        char serialData = mySerial.read();
+      while (Serial3.available() > 0) {
+        char serialData = Serial3.read();
         receivedMessage += String(serialData);
       }
       if (receivedMessage=="OK"){
@@ -58,7 +59,7 @@ void sendMsgToSlaveWithConfirmation(String message) {
         Serial.println("\nMessage reçu:"+receivedMessage);
       }
     }
-    Serial.print(".");
+    Serial.print("."+String(Serial3.available()));
   }
 }
 
@@ -141,8 +142,7 @@ void setup() {
     pinMode(lignesPins[i], INPUT_PULLUP);
   }
 
-  COMSetup();
-
+  
   Serial.begin(115200);
   SPI.begin();
   rfid.PCD_Init();
@@ -162,14 +162,17 @@ void setup() {
   tft.setTextSize(2);
 
   Serial.println("La carte à démarré !");
+
+  COMSetup();
+
   sendMsgToSlaveWithConfirmation("Message de test pour la communication");
 }
 
 void loop() {
-  while (true){
-    sendMsgToSlave("m'entends tu? )");
-    delay(3000);
-  }
+  //while (true){
+  //  sendMsgToSlave("m'entends tu? )");
+  //  delay(3000);
+  //}
   //carte_id = GetId();
   //Serial.println(carte_id);
 

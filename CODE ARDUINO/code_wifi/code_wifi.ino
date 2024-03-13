@@ -15,8 +15,8 @@ bool DebugSerialPrinln=false;
 *   Contient les fonctions de communications                                                                                            *
 ****************************************************************************************************************************************/
 #include <SoftwareSerial.h>
-#define rxPin D6
-#define txPin D8 // j'ai essayé d'inverser ok ici (pas check l'envoie mais reception ok)
+#define rxPin D14
+#define txPin D15 // j'ai essayé d'inverser ok ici (pas check l'envoie mais reception ok)
 int CommunicationDelay=1000;
 int ConsoleRefreshDelay=1000;
 int SlaveTimeout=60000;
@@ -24,7 +24,7 @@ SoftwareSerial mySerial (rxPin, txPin);
 
 void sendMsgToMaster(String message) {
   mySerial.print(message);
-  Serial.println("Une message à été envoyé:"+message);
+  Serial.println("Un message à été envoyé:"+message);
   delay(CommunicationDelay*4);
 }
 
@@ -56,7 +56,8 @@ void sendMsgToSlaveWithConfirmation(String message) {
   String receivedMessage = "";
   while (true){
     mySerial.print(message);
-    delay(CommunicationDelay*3);
+    //delay(CommunicationDelay*3);
+    delay(10);
     if (mySerial.available()>0){
       receivedMessage = "";
       delay(CommunicationDelay); // Wait for the short message to arrive
@@ -84,6 +85,7 @@ void setup() {
   COMSetup();
   Serial.println();
   Serial.println("La carte à démarré !");
+  //sendMsgToSlaveWithConfirmation("Message de test pour la communication");
 }
 
 
@@ -97,10 +99,8 @@ void loop() {
       StringBuilder+=String(Serialdata);
     }
     Serial.println(StringBuilder);
-    if (StringBuilder == "Message de test pour la communication"){
+    if (StringBuilder == "Message de test pour la communication"){ //Message de test pour la communication
       sendMsgToMaster("OK");
-      mySerial.print("OK");
-
     }
   }
 }
