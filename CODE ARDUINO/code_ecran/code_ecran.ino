@@ -23,15 +23,21 @@ String carte_id;
 #define rxPin 7 // jour d'anniversaire de Martin & Arthur
 int CommunicationDelay=1000;
 //int ConsoleRefreshDelay=1000;
-int SlaveTimeout=60000;
-//SoftwareSerial mySerial (rxPin, txPin);
 void COMSetup() {
   pinMode(rxPin, INPUT);
   pinMode(txPin, OUTPUT);
   Serial3.begin(9600);
   //Serial.begin(115200);
 }
+int TimeoutMsgResponse=1000;
+int TimeoutArduinoUno=20000;
+int SlaveTimeout=60000;
+unsigned long Timeout;
 
+void sendKeepAlive() {
+  Serial3.print("KA");
+  Serial.print("Keep alive");
+}
 void sendMsgToSlave(String message) {
   Serial3.print(message);
   Serial.println("Un message à été envoyé:"+message);
@@ -61,6 +67,20 @@ void sendMsgToSlaveWithConfirmation(String message) {
     }
     Serial.print("."+String(Serial3.available()));
   }
+}
+String ReadInstantMsgFromArduino(){
+  String StringBuilder="";
+  while(true){
+    if (0<Serial.available()){
+      delay(TimeoutMsgResponse); //laisser un peu de temps pour que le court message arrive
+      while(Serial.available()>0){
+        char Serialdata =Serial.read();
+        StringBuilder+=String(Serialdata);
+      }
+      return StringBuilder;
+    }
+  }
+  return "NO MESSAGE FOUND";
 }
 
 String GetId() {
@@ -169,12 +189,6 @@ void setup() {
 }
 
 void loop() {
-  //while (true){
-  //  sendMsgToSlave("m'entends tu? )");
-  //  delay(3000);
-  //}
-  //carte_id = GetId();
-  //Serial.println(carte_id);
 
   /*boolean istouched = ts.touched();
   TS_Point p = ts.getPoint();
@@ -235,10 +249,32 @@ void insertion(){
   tft.setCursor(10, 110);tft.print("Veuillez scanner votre");tft.setCursor(10, 135);tft.print("carte");
   carte_id = GetId();
   Serial.println(carte_id);
-  
+  AskData(String(carte_id));
   //delay(10000);
   code();
 }
+String AskData(String carte_id){
+  while (true){
+    sendMsgToSlaveWithConfirmation("DATA");
+    sendMsgToSlave(carte_id);
+    String receivedMessage = "";
+    while (true){
+        delay(10);
+        if (Serial3.available()>0){
+          delay(CommunicationDelay); // Wait for the short message to arrive
+          Serial.print("Decrypting cards details");
+          while (Serial3.available() > 0) {
+            char serialData = Serial3.read();
+            receivedMessage += String(serialData);
+          }
+          break;
+        }
+    }
+    Serial.println(receivedMessage);
+    break;
+  }
+}
+
 void virement(){
   bool testouch=false;
   tft.fillScreen(ILI9341_WHITE);
