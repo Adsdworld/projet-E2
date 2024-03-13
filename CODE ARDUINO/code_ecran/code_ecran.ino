@@ -1,3 +1,32 @@
+#include <ArduinoJson.h>
+#include <ArduinoJson.hpp>
+int ExtractFieldValue(String dataReceived, String fieldName) {
+  const size_t capacity = JSON_OBJECT_SIZE(4) + 60; //ici il y a 4 valeurs: id, carte_id, solde, carte_code >>> à ajuster en fonction des données reçus
+  DynamicJsonDocument doc(capacity);
+  DeserializationError error = deserializeJson(doc, dataReceived);
+
+  if (error) {
+    Serial.print("Erreur de parsing JSON: ");
+    Serial.println(error.c_str());
+    return -1; // Valeur par défaut si le parsing échoue
+  }
+
+  // Vérifiez si le champ spécifié existe dans le JSON
+  if (doc.containsKey(fieldName)) {
+    return doc[fieldName].as<int>(); // Renvoie la valeur du champ sous forme d'entier
+  } else {
+    Serial.println(fieldName+" non trouvé dans le JSON");
+    return -1; // Champ non trouvé, renvoie une valeur par défaut
+  }
+}
+// Main
+String carte;
+int carte_code;
+int solde;
+String carte_id;
+String id;
+
+
 #include <XPT2046_Touchscreen.h>
 #include <Adafruit_ILI9341.h>
 #include <Adafruit_GFX.h>
@@ -15,7 +44,6 @@
 #define RST_PIN_RFID 41 //Use D before for the WIFI CARD
 
 MFRC522 rfid(CS_PIN_RFID, RST_PIN_RFID);
-String carte_id;
 
 //communication
 //#include <SoftwareSerial.h>
@@ -114,7 +142,7 @@ char hexaBouton[Ligne][Colonne] = {
 int lignesPins[Ligne] = {22, 24, 26, 28}; // Broches pour les lignes (D0 à D3)
 int colonnesPins[Colonne] = {30, 32, 34, 36};
 String getNumber(){
-  String boutonPresse;
+  char boutonPresse;
   bool play = true;
   while (play){
     for (int i = 0; i < Colonne; i++) {
@@ -140,16 +168,15 @@ String getNumber(){
       digitalWrite(colonnesPins[i], HIGH);
     }
   }
-  return boutonPresse;
+  Serial.println(String(boutonPresse));
+  return String(boutonPresse);
 }
 
 
 
 
 
-unsigned long solde = 32768;
 int soldeTemp=0;
-char nom[]="User";
 XPT2046_Touchscreen ts(CS_PIN_TOUCH_SCREEN);
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, RST_PIN);
 void setup() {
@@ -184,8 +211,6 @@ void setup() {
   Serial.println("La carte à démarré !");
 
   COMSetup();
-
-  sendMsgToSlaveWithConfirmation("Message de test pour la communication");
 }
 
 void loop() {
@@ -257,7 +282,6 @@ String AskData(String carte_id){
   while (true){
     sendMsgToSlaveWithConfirmation("DATA");
     sendMsgToSlave(carte_id);
-    String receivedMessage = "";
     while (true){
         delay(10);
         if (Serial3.available()>0){
@@ -265,12 +289,15 @@ String AskData(String carte_id){
           Serial.print("Decrypting cards details");
           while (Serial3.available() > 0) {
             char serialData = Serial3.read();
-            receivedMessage += String(serialData);
+            carte += String(serialData);
           }
           break;
         }
     }
-    Serial.println(receivedMessage);
+    Serial.println(carte);
+    id = ExtractFieldValue(carte, "A");
+    carte_code = ExtractFieldValue(carte, "C");
+    solde = ExtractFieldValue(carte, "S");
     break;
   }
 }
@@ -377,27 +404,29 @@ void code(){
   bool testcode=false;
   tft.fillScreen(ILI9341_WHITE);
   tft.setTextColor(ILI9341_BLACK);
-  tft.setCursor(10, 10);tft.print("Bonjour ");tft.print(nom);
+  tft.setCursor(10, 10);tft.print("Bonjour ");tft.print(carte_id);
   tft.setCursor(10, 35);tft.print("Veuillez rentrer votre"),tft.setCursor(10, 60);tft.print("code sur le digicode");
   tft.setTextColor(ILI9341_WHITE);
   tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);
   tft.fillRoundRect(5,195,94,24,10,ILI9341_BLACK);tft.setCursor(10, 200);tft.print("Valider");
-  String code;
-  String symbole = getNumber();
-  code += symbole;
+  String code = getNumber();
   tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setTextSize(4);tft.setCursor(70, 110);tft.print("*");
-  symbole = getNumber();
-  code += symbole;
-  tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.print("* *");
-  symbole = getNumber();
-  code += symbole;
-  tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.print("* * *");
-  symbole = getNumber();
-  code += symbole;
-  tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.print("* * * *");tft.setTextSize(2);
+  code += getNumber();
+  tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("* *");
+  code += getNumber();
+  tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("* * *");
+  code += getNumber();
+  tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("* * * *");tft.setTextSize(2);
 
-  //tft.setCursor(?, ?);
-  //tft.fillRoundRect(?,?,?,?,?,ILI9341_BLACK);
+  Serial.println(code);
+  Serial.println(String(carte_code));
+  if (String(code) == String(carte_code)){ //bug
+    Serial.println("Les codes correspondent");
+    
+  } else {
+    Serial.println("Les codes ne correspondent pas ");
+  }
+  delay(5000);
 
   
   // base arduino wifi
@@ -409,12 +438,6 @@ void code(){
     }
   }
 }
-void transacannul() {
-  tft.fillScreen(ILI9341_WHITE);
-  tft.setTextColor(ILI9341_BLACK);
-  tft.setCursor(10, 110);tft.print("Transaction annulée");
-  delay(2000);
-}
 unsigned long aurevoir(){
   tft.fillScreen(ILI9341_WHITE);
   tft.setTextColor(ILI9341_BLACK);
@@ -423,46 +446,7 @@ unsigned long aurevoir(){
   insertion();
   menu();
 }
-void bienvenue(){
 
-}
-unsigned long texteCode(bool correct){
-  if (correct==true){
-    tft.fillScreen(ILI9341_WHITE);
-    tft.setTextColor(ILI9341_BLACK);
-    tft.setCursor(10, 110);tft.print("Code Bon");
-    delay(1000);
-    menu();
-  }
-  else{
-    tft.fillScreen(ILI9341_WHITE);
-    tft.setTextColor(ILI9341_BLACK);
-    tft.setCursor(10, 110);tft.print("Mauvais Code");
-    delay(1000);
-    code();
-  }
-}
-unsigned long envoieMessage(char message[], int x){
-  char tempMessage[]="";
-  tft.fillScreen(ILI9341_WHITE);
-  tft.setTextColor(ILI9341_BLACK);
-  int tempInt=strlen(message);
-  while (tempInt>26){
-    for(int i=0;i<strlen(message);i++){
-      if(&message[strlen(message)-i]==" "){
-        envoieMessage(tempMessage,x+10);
-        tempInt=tempInt-strlen(tempMessage);
-        char tempMessage[]="";
-      }
-      else{
-        tempMessage[i]=&message[strlen(message)-i];
-      }
-    }
-  }
-  int y=5+(310-(12*strlen(message)-2))/2;
-  tft.setCursor(x,y);
-  tft.print(message);
-}
 void autreMontant(){
   bool testouch=false;
   int montant=10;

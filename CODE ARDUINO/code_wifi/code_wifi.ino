@@ -18,8 +18,6 @@ bool DebugSerialPrinln=false;
 //
 #include <ESPping.h>
 #include <ping.h>
-#include <ArduinoJson.h>
-#include <ArduinoJson.hpp>
 #include <ESP8266HTTPClient.h>
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
@@ -106,25 +104,6 @@ String ReceiveDataFromDatabase(String carte_id){
     return data_received;
   }
   return "null";
-}
-int ExtractFieldValue(String dataReceived, String fieldName) {
-  const size_t capacity = JSON_OBJECT_SIZE(4) + 60; //ici il y a 4 valeurs: id, carte_id, solde, carte_code >>> à ajuster en fonction des données reçus
-  DynamicJsonDocument doc(capacity);
-  DeserializationError error = deserializeJson(doc, dataReceived);
-
-  if (error) {
-    Serial.print("Erreur de parsing JSON: ");
-    Serial.println(error.c_str());
-    return -1; // Valeur par défaut si le parsing échoue
-  }
-
-  // Vérifiez si le champ spécifié existe dans le JSON
-  if (doc.containsKey(fieldName)) {
-    return doc[fieldName].as<int>(); // Renvoie la valeur du champ sous forme d'entier
-  } else {
-    Serial.println("Champ non trouvé dans le JSON");
-    return -1; // Champ non trouvé, renvoie une valeur par défaut
-  }
 }
 void ModifyDataToDatabase(String carte_id, String solde, String carte_code){
   if(IsConnectionActive()){
