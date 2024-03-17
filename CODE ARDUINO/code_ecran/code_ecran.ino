@@ -4,14 +4,18 @@
 ****************************************************************************************************************************************/
 #include <SPI.h>
 String carte;
-int carte_code;
+//String stringCarteCode;
+    //String stringCarteCode = String(""); // Créez une chaîne vide
+
+int intCarteCode;
 int solde;
 String carte_id;
 String id;
+String pad;
 bool MainSetup(int position, int totalPosition){
   Serial.println(String(position)+"/"+String(totalPosition)+" Main ...");
   SPI.begin();
-  Serial.println("Main prête !");
+  Serial.println("Main prêt !");
   return true;
 }
 
@@ -88,7 +92,7 @@ String ReadInstantMsgFromArduino(){
   return "NO MESSAGE FOUND";
 }
 int ExtractFieldValue(String dataReceived, String fieldName) {
-  const size_t capacity = JSON_OBJECT_SIZE(4) + 60; //ici il y a 4 valeurs: id, carte_id, solde, carte_code >>> à ajuster en fonction des données reçus
+  const size_t capacity = JSON_OBJECT_SIZE(4) + 60; //ici il y a 4 valeurs: id, carte_id, solde, carte _code >>> à ajuster en fonction des données reçus
   DynamicJsonDocument doc(capacity);
   DeserializationError error = deserializeJson(doc, dataReceived);
 
@@ -106,6 +110,8 @@ int ExtractFieldValue(String dataReceived, String fieldName) {
     return -1; // Champ non trouvé, renvoie une valeur par défaut
   }
 }
+
+
 
 /****************************************************************************************************************************************
 * SCREEN:                                                                                                                   *
@@ -174,11 +180,11 @@ String GetId() {
 ****************************************************************************************************************************************/
 const int Ligne = 4;
 const int Colonne = 4;
-char hexaBouton[Ligne][Colonne] = {
-  {'1', '2', '3', 'A'},
-  {'4', '5', '6', 'B'},
-  {'7', '8', '9', 'C'},
-  {'*', '0', '#', 'D'}
+String hexaBouton[Ligne][Colonne] = {
+  {"1", "2", "3", "A"},
+  {"4", "5", "6", "B"},
+  {"7", "8", "9", "C"},
+  {"*", "0", "#", "D"}
 };
 int lignesPins[Ligne] = {22, 24, 26, 28}; // Broches pour les lignes (D0 à D3)
 int colonnesPins[Colonne] = {30, 32, 34, 36};
@@ -194,8 +200,8 @@ bool DigicodeSetup(int position, int totalPosition){
   Serial.println("Digicode prêt !");
   return true;
 }
-String getNumber(){
-  char boutonPresse; // stocke le caractère
+void getNumber(){
+  String boutonPresse; // stocke le caractère
   bool play = true; // controle la boucle principale
   while (play){ // boucle principale
     for (int i = 0; i < Colonne; i++) {
@@ -213,8 +219,9 @@ String getNumber(){
           }
           // Un bouton a été pressé dans la ligne j et la colonne i
           boutonPresse = hexaBouton[j][i];
-          Serial.println(String(boutonPresse));
-          return String(boutonPresse);
+          Serial.println(boutonPresse);
+          pad += hexaBouton[j][i];
+          return;
           play = false;
           break;
         }
@@ -317,7 +324,7 @@ bool insertion(){
   code();
   return true;
 }
-String AskData(String carte_id){
+void AskData(String carte_id){
   while (true){
     sendMsgToSlaveWithConfirmation("DATA");
     sendMsgToSlave(carte_id);
@@ -335,7 +342,8 @@ String AskData(String carte_id){
     }
     Serial.println(carte);
     id = ExtractFieldValue(carte, "A");
-    carte_code = ExtractFieldValue(carte, "C");
+    intCarteCode = ExtractFieldValue(carte, "C");
+    //stringCarteCode+=String(intCarteCode); //marche pas
     solde = ExtractFieldValue(carte, "S");
     break;
   }
@@ -450,21 +458,22 @@ bool code(){
   //tft.fillRoundRect(5,195,94,24,10,ILI9341_BLACK);tft.setCursor(10, 200);tft.print("Valider");
   tft.setTextSize(4);
   tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("_");
-  String code = getNumber();
+  //String code; 
+  getNumber();
   tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("*");
   delay(1000);
   tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("* _");
-  code += getNumber();
+  getNumber();
   tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("* *");
   delay(1000);
   tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("* * _");
-  code += getNumber();
+  getNumber();
   tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("* * *");
   delay(1000);
   tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("* * * _");
-  Serial.println(String(code));
-  code += getNumber();
-  Serial.println("apres getn umber, avant scree:code: ");
+  Serial.println(pad);
+  getNumber();
+  Serial.println("apres getn umber, avant scree:code: "); // pas toucher cette zone ç tient du miracle
   tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("* * * *");  tft.setTextSize(2);  tft.fillRoundRect(5,195,94,24,10,ILI9341_BLACK);tft.setCursor(10, 200);tft.print("Valider");
 
 
@@ -477,10 +486,10 @@ bool code(){
     }
   }
   Serial.println("Bouton touché");
-  String code2=String(code);
-  Serial.println(String(code2));
-  Serial.println(String(carte_code));
-  if (String(code2) == String(carte_code)){ //bug
+  //String code2=String(code);
+  Serial.println(pad);
+  Serial.println(String(intCarteCode));
+  if (pad.toInt() == intCarteCode){ //bug
     Serial.println("Les codes correspondent");
     menu();
     // check screen cadenas ?
