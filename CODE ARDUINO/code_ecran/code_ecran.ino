@@ -2,6 +2,14 @@
 qinad onclique sur un bouton si il n'y a pas de changment d'écran inverser couleurs text et rectfill
 vérif int > ou < solde
 
+écran get information
+écran sending information
+écran information send
+
+possibilité de modifier son code
+
+
+
 
 prénom / vérifier présence enveloppe
 
@@ -575,7 +583,7 @@ void depot_confirmation(int soldeTemp){
     testouch=true;
     }
     if(touch && p.x>3200 && p.x<3600 && p.y>2700 &&p.y<3700){
-    while (!ModifyData(carte_id, solde, intCarteCode)){}
+    while (!ModifyData(carte_id, solde+montant, intCarteCode)){}
       solde+=montant;
     menu();
     delay(100);
