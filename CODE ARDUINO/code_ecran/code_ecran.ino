@@ -1,62 +1,39 @@
-#include <ArduinoJson.h>
-#include <ArduinoJson.hpp>
-int ExtractFieldValue(String dataReceived, String fieldName) {
-  const size_t capacity = JSON_OBJECT_SIZE(4) + 60; //ici il y a 4 valeurs: id, carte_id, solde, carte_code >>> à ajuster en fonction des données reçus
-  DynamicJsonDocument doc(capacity);
-  DeserializationError error = deserializeJson(doc, dataReceived);
-
-  if (error) {
-    Serial.print("Erreur de parsing JSON: ");
-    Serial.println(error.c_str());
-    return -1; // Valeur par défaut si le parsing échoue
-  }
-
-  // Vérifiez si le champ spécifié existe dans le JSON
-  if (doc.containsKey(fieldName)) {
-    return doc[fieldName].as<int>(); // Renvoie la valeur du champ sous forme d'entier
-  } else {
-    Serial.println(fieldName+" non trouvé dans le JSON");
-    return -1; // Champ non trouvé, renvoie une valeur par défaut
-  }
-}
-// Main
+/****************************************************************************************************************************************
+* Main:                                                                                                                                 *
+*   Contient les Variables globales.                                                                                                    *
+****************************************************************************************************************************************/
+#include <SPI.h>
 String carte;
 int carte_code;
 int solde;
 String carte_id;
 String id;
+bool MainSetup(int position, int totalPosition){
+  Serial.println(String(position)+"/"+String(totalPosition)+" Main ...");
+  SPI.begin();
+  Serial.println("Main prête !");
+  return true;
+}
 
-
-#include <XPT2046_Touchscreen.h>
-#include <Adafruit_ILI9341.h>
-#include <Adafruit_GFX.h>
-#include <SPI.h>
-
-#define CS_PIN_TOUCH_SCREEN  47 //SS + CS = Slave Select
-#define TFT_DC  49
-#define TFT_CS 53
-#define RST_PIN 48
-
-// RST identique pour RST ECRAN & RFID
-
-#include <MFRC522.h> //RFID
-#define CS_PIN_RFID 43 //Use D before for the WIFI CARD
-#define RST_PIN_RFID 41 //Use D before for the WIFI CARD
-
-MFRC522 rfid(CS_PIN_RFID, RST_PIN_RFID);
-
-//communication
-//#include <SoftwareSerial.h>
-#define txPin 8 // mois d'anniversaire de Arthur & Martin
-#define rxPin 7 // jour d'anniversaire de Martin & Arthur
-int CommunicationDelay=1000;
-//int ConsoleRefreshDelay=1000;
-void COMSetup() {
+/****************************************************************************************************************************************
+* UART COMMUNICATION:                                                                                                                   *
+*   Contient les fonctions de communications                                                                                            *
+****************************************************************************************************************************************/
+#include <ArduinoJson.h>
+#include <ArduinoJson.hpp>
+#define txPin 8 
+#define rxPin 7 
+bool COMSetup(int position, int totalPosition) {
+  Serial.begin(115200);
+  Serial.println(String(position)+"/"+String(totalPosition)+" Communication ...");
   pinMode(rxPin, INPUT);
   pinMode(txPin, OUTPUT);
   Serial3.begin(9600);
-  //Serial.begin(115200);
+  Serial.println("Communication prête !");
+  return true;
 }
+int CommunicationDelay=1000;
+//int ConsoleRefreshDelay=1000;
 int TimeoutMsgResponse=1000;
 int TimeoutArduinoUno=20000;
 int SlaveTimeout=60000;
@@ -110,7 +87,68 @@ String ReadInstantMsgFromArduino(){
   }
   return "NO MESSAGE FOUND";
 }
+int ExtractFieldValue(String dataReceived, String fieldName) {
+  const size_t capacity = JSON_OBJECT_SIZE(4) + 60; //ici il y a 4 valeurs: id, carte_id, solde, carte_code >>> à ajuster en fonction des données reçus
+  DynamicJsonDocument doc(capacity);
+  DeserializationError error = deserializeJson(doc, dataReceived);
 
+  if (error) {
+    Serial.print("Erreur de parsing JSON: ");
+    Serial.println(error.c_str());
+    return -1; // Valeur par défaut si le parsing échoue
+  }
+
+  // Vérifiez si le champ spécifié existe dans le JSON
+  if (doc.containsKey(fieldName)) {
+    return doc[fieldName].as<int>(); // Renvoie la valeur du champ sous forme d'entier
+  } else {
+    Serial.println(fieldName+" non trouvé dans le JSON");
+    return -1; // Champ non trouvé, renvoie une valeur par défaut
+  }
+}
+
+/****************************************************************************************************************************************
+* SCREEN:                                                                                                                   *
+*   Contient les fonctions pour l'écran                                                                                                   *
+****************************************************************************************************************************************/
+#include <XPT2046_Touchscreen.h>
+#include <Adafruit_ILI9341.h>
+#include <Adafruit_GFX.h>
+#define CS_PIN_TOUCH_SCREEN  47 //SS + CS = Slave Select
+#define TFT_DC  49
+#define TFT_CS 53
+#define RST_PIN 48
+  XPT2046_Touchscreen ts(CS_PIN_TOUCH_SCREEN);
+  Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, RST_PIN);
+bool ScreenSetup(int position, int totalPosition) {
+  Serial.println(String(position)+"/"+String(totalPosition)+" Ecran ...");
+  pinMode(TFT_CS, OUTPUT);
+  digitalWrite(TFT_CS, HIGH);
+  pinMode(CS_PIN_TOUCH_SCREEN, OUTPUT);
+  digitalWrite(CS_PIN_TOUCH_SCREEN, HIGH);
+  tft.begin();
+  ts.begin();
+  Serial.println("Ecran prêt !");
+  return true;
+}
+
+/****************************************************************************************************************************************
+* RFID:                                                                                                                   *
+*   Contient les fonctions pour le RFID                                                                                                 *
+****************************************************************************************************************************************/
+// RST identique pour RST ECRAN & RFID
+#include <MFRC522.h> //RFID
+#define CS_PIN_RFID 43 
+#define RST_PIN_RFID 41 
+MFRC522 rfid(CS_PIN_RFID, RST_PIN_RFID);
+bool RfidSetup(int position, int totalPosition){
+  Serial.println(String(position)+"/"+String(totalPosition)+" Rfid ...");
+  rfid.PCD_Init();
+  pinMode(CS_PIN_RFID, OUTPUT);
+  digitalWrite(CS_PIN_RFID, HIGH);
+  Serial.println("Rfid prêt !");
+  return true;
+}
 String GetId() {
   while (!rfid.PICC_IsNewCardPresent()) {//il attends dans cette boucle, ajout de millis plus tard
   }
@@ -129,47 +167,62 @@ String GetId() {
   }
   return GetId();
 }
+
+/****************************************************************************************************************************************
+* DIGICODE:                                                                                                                   *
+*   Contient les fonctions pour le digicode                                                                                             *
+****************************************************************************************************************************************/
 const int Ligne = 4;
 const int Colonne = 4;
-
 char hexaBouton[Ligne][Colonne] = {
   {'1', '2', '3', 'A'},
   {'4', '5', '6', 'B'},
   {'7', '8', '9', 'C'},
   {'*', '0', '#', 'D'}
 };
-
 int lignesPins[Ligne] = {22, 24, 26, 28}; // Broches pour les lignes (D0 à D3)
 int colonnesPins[Colonne] = {30, 32, 34, 36};
+bool DigicodeSetup(int position, int totalPosition){
+  Serial.println(String(position)+"/"+String(totalPosition)+" Digicode ...");
+  for (int i = 0; i < Colonne; i++) {
+    pinMode(colonnesPins[i], OUTPUT);
+    digitalWrite(colonnesPins[i], HIGH);
+  }
+  for (int i = 0; i < Ligne; i++) {
+    pinMode(lignesPins[i], INPUT_PULLUP);
+  }
+  Serial.println("Digicode prêt !");
+  return true;
+}
 String getNumber(){
-  char boutonPresse;
-  bool play = true;
-  while (play){
+  char boutonPresse; // stocke le caractère
+  bool play = true; // controle la boucle principale
+  while (play){ // boucle principale
+    for (int i = 0; i < Colonne; i++) {
+        digitalWrite(colonnesPins[i], HIGH); 
+    }
     for (int i = 0; i < Colonne; i++) {
       // Activer la colonne en cours
-      digitalWrite(colonnesPins[i], LOW);
-      
+      digitalWrite(colonnesPins[i], LOW); 
       // Lire les lignes
       for (int j = 0; j < Ligne; j++) {
         if (digitalRead(lignesPins[j]) == LOW) {
-          // Un bouton a été pressé dans la ligne j et la colonne i
-          boutonPresse = hexaBouton[j][i];
-          //Serial.print("\nbutton: "+boutonPresse);
-          play = false;
-          
           // Attendez que le bouton soit relâché
           while (digitalRead(lignesPins[j]) == LOW) {
-            delay(10);
+            //delay(10); //10ms
           }
+          // Un bouton a été pressé dans la ligne j et la colonne i
+          boutonPresse = hexaBouton[j][i];
+          Serial.println(String(boutonPresse));
+          return String(boutonPresse);
+          play = false;
+          break;
         }
       }
-
       // Désactiver la colonne en cours
       digitalWrite(colonnesPins[i], HIGH);
     }
   }
-  Serial.println(String(boutonPresse));
-  return String(boutonPresse);
 }
 
 
@@ -177,57 +230,32 @@ String getNumber(){
 
 
 int soldeTemp=0;
-XPT2046_Touchscreen ts(CS_PIN_TOUCH_SCREEN);
-Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, RST_PIN);
+
 void setup() {
-  for (int i = 0; i < Colonne; i++) {
-    pinMode(colonnesPins[i], OUTPUT);
-    digitalWrite(colonnesPins[i], HIGH);
-  }
-  // Initialiser les broches de ligne avec une résistance de pull-up interne
-  for (int i = 0; i < Ligne; i++) {
-    pinMode(lignesPins[i], INPUT_PULLUP);
-  }
+  COMSetup(1, 5);
+  MainSetup(2, 5);
+  ScreenSetup(3, 5);
+  RfidSetup(4, 5);
+  DigicodeSetup(5, 5);
 
-  
-  Serial.begin(115200);
-  SPI.begin();
-  rfid.PCD_Init();
-  pinMode(CS_PIN_RFID, OUTPUT);
-  digitalWrite(CS_PIN_RFID, HIGH);
-
-  pinMode(TFT_CS, OUTPUT);
-  digitalWrite(TFT_CS, HIGH);
-  pinMode(CS_PIN_TOUCH_SCREEN, OUTPUT);
-  digitalWrite(CS_PIN_TOUCH_SCREEN, HIGH);
-  tft.begin();
-  ts.begin();
-  //Serial.begin(115200);
   tft.setRotation(1);
   ts.setRotation(2);
   tft.fillScreen(ILI9341_WHITE);
   tft.setTextSize(2);
 
-  Serial.println("La carte à démarré !");
-
-  COMSetup();
+  Serial.println("La carte Méga est prête !");
 }
 
 void loop() {
-
   /*boolean istouched = ts.touched();
   TS_Point p = ts.getPoint();
   tft.fillRect(50, 180, 140, 60, ILI9341_WHITE);
   tft.setTextColor(ILI9341_DARKGREEN);
   tft.setCursor(10, 180);tft.print("X = ");tft.print(p.x);
   tft.setCursor(10, 210);tft.print("Y = ");tft.print(p.y);
-  if(istouched){
-    insertion();
-  }
   istouched=false;
   delay(100);*/
-  insertion();
-
+  Welcome();
 }
 void menu(){
   bool testouch=false;
@@ -266,17 +294,28 @@ void menu(){
     }
   }
 }
-void insertion(){
+bool Welcome(){
+  tft.fillScreen(ILI9341_WHITE);
+  tft.setTextColor(ILI9341_BLACK);
+  tft.setCursor(100, 10);tft.print("Bienvenue");
+  tft.setCursor(10, 110);tft.print("Touchez l'ecran pour");tft.setCursor(10, 135);tft.print("commencer");
+  while (!ts.touched()){} // wait for touch
+  insertion(); 
+  return true;
+}
+bool insertion(){
   bool testcarte=false;
   tft.fillScreen(ILI9341_WHITE);
   tft.setTextColor(ILI9341_BLACK);
   tft.setCursor(100, 10);tft.print("Bienvenue");
   tft.setCursor(10, 110);tft.print("Veuillez scanner votre");tft.setCursor(10, 135);tft.print("carte");
-  carte_id = GetId();
+  while (!ts.touched()){} // wait for touch
+  carte_id = "71d5f58";
+  //carte_id = GetId();
   Serial.println(carte_id);
   AskData(String(carte_id));
-  //delay(10000);
   code();
+  return true;
 }
 String AskData(String carte_id){
   while (true){
@@ -400,7 +439,7 @@ void depot(){
     }
   }
 }
-void code(){
+bool code(){
   bool testcode=false;
   tft.fillScreen(ILI9341_WHITE);
   tft.setTextColor(ILI9341_BLACK);
@@ -408,34 +447,48 @@ void code(){
   tft.setCursor(10, 35);tft.print("Veuillez rentrer votre"),tft.setCursor(10, 60);tft.print("code sur le digicode");
   tft.setTextColor(ILI9341_WHITE);
   tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);
-  tft.fillRoundRect(5,195,94,24,10,ILI9341_BLACK);tft.setCursor(10, 200);tft.print("Valider");
+  //tft.fillRoundRect(5,195,94,24,10,ILI9341_BLACK);tft.setCursor(10, 200);tft.print("Valider");
+  tft.setTextSize(4);
+  tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("_");
   String code = getNumber();
-  tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setTextSize(4);tft.setCursor(70, 110);tft.print("*");
+  tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("*");
+  delay(1000);
+  tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("* _");
   code += getNumber();
   tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("* *");
+  delay(1000);
+  tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("* * _");
   code += getNumber();
   tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("* * *");
+  delay(1000);
+  tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("* * * _");
+  Serial.println(String(code));
   code += getNumber();
-  tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("* * * *");tft.setTextSize(2);
+  Serial.println("apres getn umber, avant scree:code: ");
+  tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("* * * *");  tft.setTextSize(2);  tft.fillRoundRect(5,195,94,24,10,ILI9341_BLACK);tft.setCursor(10, 200);tft.print("Valider");
 
-  Serial.println(code);
+
+
+  bool boutonTouche = false;
+  while (!boutonTouche){
+    while(!ts.touched()){
+      if (ts.getPoint().x>3200 && ts.getPoint().x<3600 && ts.getPoint().y>450 && ts.getPoint().y<1500)
+        boutonTouche = true;
+    }
+  }
+  Serial.println("Bouton touché");
+  String code2=String(code);
+  Serial.println(String(code2));
   Serial.println(String(carte_code));
-  if (String(code) == String(carte_code)){ //bug
+  if (String(code2) == String(carte_code)){ //bug
     Serial.println("Les codes correspondent");
-    
+    menu();
+    // check screen cadenas ?
+    return true;
   } else {
     Serial.println("Les codes ne correspondent pas ");
-  }
-  delay(5000);
-
-  
-  // base arduino wifi
-  while(testcode==false){
-    boolean touch = ts.touched();
-    TS_Point p = ts.getPoint();
-    if (touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){
-      menu();
-    }
+    // check screen + error
+    return false;
   }
 }
 unsigned long aurevoir(){
@@ -443,8 +496,6 @@ unsigned long aurevoir(){
   tft.setTextColor(ILI9341_BLACK);
   tft.setCursor(10, 110);tft.print("Au revoir !");
   delay(2000);
-  insertion();
-  menu();
 }
 
 void autreMontant(){

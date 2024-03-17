@@ -1,6 +1,6 @@
 /****************************************************************************************************************************************
 * Main:                                                                                                                                 *
-*   Contient les Variables essentiels.                                                                                                  *
+*   Contient les Variables globales.                                                                                                    *
 ****************************************************************************************************************************************/
 int TimeoutMsgResponse=1000; //Temps d'attente pour recevoir un message
 int TimeoutArduinoUno=60000; //Temps d'attente pour comprendre que la UNO est KO
@@ -30,14 +30,14 @@ String server="projet-e2-eseo.000webhostapp.com";
 const char* host = "www.google.com";
 
 void WifiSetup(){
-  //Serial.begin(115200);
+  Serial.println("2/2 Internet ...");
+  Serial.println("Connexion au réseau Wifi");
   WiFi.begin(WIFI_SSID, WIFI_PASS);
-  Serial.println("\nConnection au wifi");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
-  Serial.println("Connecté ! Adresse IP : ");
+  Serial.println("Connecté à internet !\nAdresse IP : ");
   Serial.println(WiFi.localIP());
 }
 bool IsConnectionActive(){
@@ -202,11 +202,12 @@ void sendMsgToSlaveWithConfirmation(String message) {
 }
 
 void COMSetup() {
+  Serial.begin(115200);
+  Serial.println("\n1/2 Communication ...");
   pinMode(rxPin, INPUT);
   pinMode(txPin, OUTPUT);
   mySerial.begin(9600);
-  Serial.begin(115200);
-  Serial.println();
+  Serial.println("Communication prête !");
 }
 
 
@@ -214,7 +215,7 @@ void COMSetup() {
 void setup() {
   COMSetup();
   WifiSetup();
-  Serial.println("La carte à démarré !");
+  Serial.println("La carte Wifi est prête !");
 }
 
 
