@@ -249,6 +249,54 @@ void loop() {
       }
       sendMsgToMaster(ReceiveDataFromDatabase(String(receivedMessage)));
     }
+    if (StringBuilder == "MODIFY"){ // Message pour la récupération des données
+      sendMsgToMaster("OK");
+      String carte_id = "";
+      while (true){
+        delay(10);
+        if (mySerial.available()>0){
+          delay(CommunicationDelay); // Wait for the short message to arrive
+          Serial.print("Decrypting cards details");
+          while (mySerial.available() > 0) {
+            char serialData = mySerial.read();
+            carte_id += String(serialData);
+          }
+          break;
+        }
+      }
+      sendMsgToMaster("OK_CARTE");
+      String solde = "";
+      while (true){
+        delay(10);
+        if (mySerial.available()>0){
+          delay(CommunicationDelay); // Wait for the short message to arrive
+          Serial.print("Decrypting cards details");
+          while (mySerial.available() > 0) {
+            char serialData = mySerial.read();
+            solde += String(serialData);
+          }
+          break;
+        }
+      }
+      sendMsgToMaster("OK_SOLDE");
+      String code = "";
+      while (true){
+        delay(10);
+        if (mySerial.available()>0){
+          delay(CommunicationDelay); // Wait for the short message to arrive
+          Serial.print("Decrypting cards details");
+          while (mySerial.available() > 0) {
+            char serialData = mySerial.read();
+            code += String(serialData);
+          }
+          break;
+        }
+      }
+      ModifyDataToDatabase(carte_id, solde, code);
+      sendMsgToMaster("OK_CODE");
+
+
+    }
   }
 }
 

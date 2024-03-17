@@ -1,3 +1,13 @@
+/*
+qinad onclique sur un bouton si il n'y a pas de changment d'écran inverser couleurs text et rectfill
+vérif int > ou < solde
+
+
+prénom / vérifier présence enveloppe
+
+
+*/
+
 /****************************************************************************************************************************************
 * Main:                                                                                                                                 *
 *   Contient les Variables globales.                                                                                                    *
@@ -236,7 +246,6 @@ void getNumber(){
 
 
 
-int soldeTemp=0;
 
 void setup() {
   COMSetup(1, 5);
@@ -348,6 +357,67 @@ void AskData(String carte_id){
     break;
   }
 }
+bool ModifyData(String carte_id, int newSolde, int newCarteCode){
+  while (true){
+    sendMsgToSlaveWithConfirmation("MODIFY");
+    sendMsgToSlave(carte_id);
+    String response;
+    while (true){
+        delay(10);
+        if (Serial3.available()>0){
+          delay(CommunicationDelay); // Wait for the short message to arrive
+          Serial.print("Sending carte_id to blockchain");
+          while (Serial3.available() > 0) {
+            char serialData = Serial3.read();
+            response += String(serialData);
+          }
+          break;
+        }
+    }
+    if (response == "OK_CARTE"){
+      sendMsgToSlave(String(newSolde));
+      response = "";
+      while (true){
+          delay(10);
+          if (Serial3.available()>0){
+            delay(CommunicationDelay); // Wait for the short message to arrive
+            Serial.print("Sending solde to blockchain");
+            while (Serial3.available() > 0) {
+              char serialData = Serial3.read();
+              response += String(serialData);
+            }
+            break;
+          }
+      }
+      if (response == "OK_SOLDE"){
+        sendMsgToSlave(String(newCarteCode));
+        response = "";
+        while (true){
+            delay(10);
+            if (Serial3.available()>0){
+              delay(CommunicationDelay); // Wait for the short message to arrive
+              Serial.print("Sending solde to blockchain");
+              while (Serial3.available() > 0) {
+                char serialData = Serial3.read();
+                response += String(serialData);
+              }
+              break;
+            }
+        }
+        if (response == "OK_CODE"){
+          return true;
+      } else {
+        return false;
+      } 
+      } else {
+        return false;
+      }  
+    } else {
+      return false;
+    }  
+    break;
+  }
+}
 
 void virement(){
   bool testouch=false;
@@ -381,37 +451,46 @@ void retrait(){
   tft.fillRoundRect(165,95,45,24,10,ILI9341_BLACK);tft.setCursor(170, 100);tft.print("50$");
   tft.fillRoundRect(240,95,55,24,10,ILI9341_BLACK);tft.setCursor(245, 100);tft.print("100$");
   tft.fillRoundRect(70,135,165,24,10,ILI9341_BLACK);tft.setCursor(75, 140);tft.print("Autre montant");
+  int soldeTemp=0;
   while(testouch==false){
     boolean touch = ts.touched();
     TS_Point p = ts.getPoint();
-    soldeTemp=0;
-    if(touch && p.x>500 && p.x<900 && p.y>1600 &&p.y<1900){
-    soldeTemp=soldeTemp+10;
+    tft.fillRect(50, 180, 140, 60, ILI9341_WHITE);
+  tft.setTextColor(ILI9341_DARKGREEN);
+  tft.setCursor(10, 180);tft.print("X = ");tft.print(p.x);
+  tft.setCursor(10, 210);tft.print("Y = ");tft.print(p.y);
+    if(touch && p.x>1200 && p.x<2200 && p.y>200 &&p.y<800){
+    soldeTemp=10;
+    Serial.println("10$");
     delay(100);
     }
-    if(touch && p.x>1300 && p.x<1800 && p.y>1600 &&p.y<1900){
-    soldeTemp=soldeTemp+20;
+    if(touch && p.x>1200 && p.x<2200 && p.y>1200 &&p.y<1800){
+    soldeTemp=20;
+    Serial.println("20$");
     delay(100);
     }
-    if(touch && p.x>2200 && p.x<2700 && p.y>1600 &&p.y<1900){
-    soldeTemp=soldeTemp+50;
+    if(touch && p.x>1200 && p.x<2200 && p.y>2200 &&p.y<2800){
+    soldeTemp=50;
+    Serial.println("50$");
     delay(100);
     }
-    if(touch && p.x>3100 && p.x<3600 && p.y>1600 &&p.y<1900){
-    soldeTemp=soldeTemp+100;
+    if(touch && p.x>1200 && p.x<2200 && p.y>3200 &&p.y<3800){
+    soldeTemp=100;
+    Serial.println("100$");
     delay(100);
     }
     if(touch && p.x>2300 && p.x<2700 && p.y>1100 &&p.y<3000){
     autreMontant();
     delay(100);
     }
-    if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){
+    if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){ //annuler
     menu();
     delay(100);
     testouch=true;
     }
-    if(touch && p.x>3200 && p.x<3600 && p.y>2700 &&p.y<3700){
-    solde=solde-soldeTemp;
+    if(touch && p.x>3200 && p.x<3600 && p.y>2700 &&p.y<3700){ // valider
+    solde-=soldeTemp;
+    Serial.println(soldeTemp);
     menu();
     delay(100);
     testouch=true;
@@ -420,12 +499,67 @@ void retrait(){
 }
 void depot(){
   bool testouch=false;
-  int montant=0;
-  int nbBillet=0;
+  tft.fillScreen(ILI9341_WHITE);
+  tft.setTextColor(ILI9341_BLACK);
+  tft.setCursor(110, 10);tft.print("Retrait");
+  tft.setCursor(10, 30);tft.print("Combien voulez vous \n déposer?");
+  tft.setTextColor(ILI9341_WHITE);
+  tft.fillRoundRect(10,195,94,24,10,ILI9341_BLACK);tft.setCursor(15, 200);tft.print("Annuler");
+  tft.fillRoundRect(205,195,94,24,10,ILI9341_BLACK);tft.setCursor(210, 200);tft.print("Valider");
+  tft.fillRoundRect(10,95,45,24,10,ILI9341_BLACK);tft.setCursor(15, 100);tft.print("10$");
+  tft.fillRoundRect(85,95,45,24,10,ILI9341_BLACK);tft.setCursor(90, 100);tft.print("20$");
+  tft.fillRoundRect(165,95,45,24,10,ILI9341_BLACK);tft.setCursor(170, 100);tft.print("50$");
+  tft.fillRoundRect(240,95,55,24,10,ILI9341_BLACK);tft.setCursor(245, 100);tft.print("100$");
+  tft.fillRoundRect(70,135,165,24,10,ILI9341_BLACK);tft.setCursor(75, 140);tft.print("Autre montant");
+  int soldeTemp=0;
+  while(testouch==false){
+    boolean touch = ts.touched();
+    TS_Point p = ts.getPoint();
+    tft.fillRect(50, 180, 140, 60, ILI9341_WHITE);
+  tft.setTextColor(ILI9341_DARKGREEN);
+  tft.setCursor(10, 180);tft.print("X = ");tft.print(p.x);
+  tft.setCursor(10, 210);tft.print("Y = ");tft.print(p.y);
+    if(touch && p.x>1200 && p.x<2200 && p.y>200 &&p.y<800){
+    soldeTemp=10;
+    Serial.println("10$");
+    delay(100);
+    }
+    if(touch && p.x>1200 && p.x<2200 && p.y>1200 &&p.y<1800){
+    soldeTemp=20;
+    delay(100);
+    }
+    if(touch && p.x>1200 && p.x<2200 && p.y>2200 &&p.y<2800){
+    soldeTemp=50;
+    delay(100);
+    }
+    if(touch && p.x>1200 && p.x<2200 && p.y>3200 &&p.y<3800){
+    soldeTemp=100;
+    delay(100);
+    }
+    if(touch && p.x>2300 && p.x<2700 && p.y>1100 &&p.y<3000){
+    autreMontant();
+    delay(100);
+    }
+    if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){ //annuler
+    menu();
+    delay(100);
+    testouch=true;
+    }
+    if(touch && p.x>3200 && p.x<3600 && p.y>2700 &&p.y<3700){ // valider
+    depot_confirmation(soldeTemp);
+    delay(100);
+    testouch=true;
+    }
+  }
+}
+void depot_confirmation(int soldeTemp){
+  bool testouch=false;
+  int montant=soldeTemp;
+  int nbBillet=soldeTemp/10;
   tft.fillScreen(ILI9341_WHITE);
   tft.setTextColor(ILI9341_BLACK);
   tft.setCursor(110, 10);tft.print("Depot");
-  tft.setCursor(10, 30);tft.print("Veuillez inserer vos \n billets");
+  tft.setCursor(10, 30);tft.print("Veuillez placer vos \n billets dans l'enveloppe");
   tft.setCursor(10, 90);tft.print("Billets :");
   tft.setTextColor(ILI9341_WHITE);tft.fillRoundRect(155,85,94,24,10,ILI9341_BLACK);tft.setCursor(160, 90);tft.print(nbBillet);
   tft.setTextColor(ILI9341_BLACK);tft.setCursor(10, 150);tft.print("Montant :");
@@ -441,6 +575,8 @@ void depot(){
     testouch=true;
     }
     if(touch && p.x>3200 && p.x<3600 && p.y>2700 &&p.y<3700){
+    while (!ModifyData(carte_id, solde, intCarteCode)){}
+      solde+=montant;
     menu();
     delay(100);
     testouch=true;
@@ -459,6 +595,7 @@ bool code(){
   tft.setTextSize(4);
   tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("_");
   //String code; 
+  pad = "";
   getNumber();
   tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("*");
   delay(1000);
