@@ -6,9 +6,15 @@ vérif int > ou < solde
 écran sending information
 écran information send
 
+empêcher les caractères A, B, C, car pas convertible en entier pour le test des codes.
+
 possibilité de modifier son code
 
+add a bit of security and details for information ttransmission
+ - verify form of data (int)
+ - verify response of slave who check response of http with a getdata.
 
+la carte wifi peut elle s'auto redémarrer sur un check google?
 
 
 prénom / vérifier présence enveloppe
@@ -27,7 +33,14 @@ String carte;
 
 int intCarteCode;
 int solde;
+int soldeReceiver;
 String carte_id;
+
+String receiver;
+int intCarteCodeReceiver;
+String carteIdReceiver;
+String idReceiver;
+
 String id;
 String pad;
 bool MainSetup(int position, int totalPosition){
@@ -50,15 +63,15 @@ bool COMSetup(int position, int totalPosition) {
   Serial.println(String(position)+"/"+String(totalPosition)+" Communication ...");
   pinMode(rxPin, INPUT);
   pinMode(txPin, OUTPUT);
-  Serial3.begin(9600);
+  Serial3.begin(38400);
   Serial.println("Communication prête !");
   return true;
 }
-int CommunicationDelay=1000;
+int CommunicationDelay=20;
 //int ConsoleRefreshDelay=1000;
-int TimeoutMsgResponse=1000;
-int TimeoutArduinoUno=20000;
-int SlaveTimeout=60000;
+int TimeoutMsgResponse=20;
+int TimeoutArduinoUno=1000;
+int SlaveTimeout=3000;
 unsigned long Timeout;
 
 void sendKeepAlive() {
@@ -72,6 +85,7 @@ void sendMsgToSlave(String message) {
 }
 void sendMsgToSlaveWithConfirmation(String message) {
   Serial.println("\n***Sending '"+message+"' with confirmation to Slave");
+  TransmitionMessage("transaction", "Communication en cours...", "O", "K");
   String receivedMessage = "";
   while (true){
     Serial3.print(message);
@@ -174,6 +188,10 @@ bool RfidSetup(int position, int totalPosition){
   return true;
 }
 String GetId() {
+  tft.fillScreen(ILI9341_WHITE);
+  tft.setTextColor(ILI9341_BLACK);
+  tft.setTextSize(2);tft.setCursor(100, 10);tft.print("Scan");
+  tft.setTextSize(2);tft.setCursor(10, 110);tft.print("Veuillez scanner votre");tft.setCursor(10, 135);tft.print("carte");
   while (!rfid.PICC_IsNewCardPresent()) {//il attends dans cette boucle, ajout de millis plus tard
   }
   if (!rfid.PICC_ReadCardSerial()) {
@@ -282,6 +300,7 @@ void loop() {
   Welcome();
 }
 void menu(){
+  tft.setTextSize(2);
   bool testouch=false;
   tft.fillScreen(ILI9341_WHITE);
   tft.setTextColor(ILI9341_BLACK);
@@ -292,10 +311,15 @@ void menu(){
   tft.fillRoundRect(5,135,94,24,10,ILI9341_BLACK);tft.setCursor(10, 140);tft.print("Retrait");
   tft.fillRoundRect(115,135,74,24,10,ILI9341_BLACK);tft.setCursor(120, 140);tft.print("Depot");
   tft.fillRoundRect(205,135,104,24,10,ILI9341_BLACK);tft.setCursor(210, 140);tft.print("Virement");
-  tft.fillRoundRect(5,195,74,24,10,ILI9341_BLACK);tft.setCursor(10, 200);tft.print("Finir");
+  tft.fillRoundRect(115,195,74,24,10,ILI9341_BLACK);tft.setCursor(120, 200);tft.print("Finir");
+  delay(500);
   while(testouch==false){
-    boolean touch = ts.touched();
     TS_Point p = ts.getPoint();
+  //tft.fillRect(50, 18, 140, 60, ILI9341_WHITE);
+  //tft.setTextColor(ILI9341_DARKGREEN);
+  //tft.setCursor(10, 18);tft.print("X = ");tft.print(p.x);
+  //tft.setCursor(10, 50);tft.print("Y = ");tft.print(p.y);
+    boolean touch = ts.touched();
     if(touch && p.x>2300 && p.x<2600 && p.y>450 &&p.y<1500){
     retrait();
     testouch=true;
@@ -311,31 +335,67 @@ void menu(){
     virement();
     delay(100);
     }
-    if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){
-    aurevoir();
+    if(touch && p.x>3200 && p.x<4000 && p.y>1100 &&p.y<2900){
+    Welcome();
     delay(100);
     testouch=true;
     }
   }
 }
+void TransmitionMessage(String title, String texte, String Lettre1, String Lettre2){
+  tft.fillScreen(ILI9341_WHITE);
+  tft.setTextSize(2);tft.setTextColor(ILI9341_BLACK);tft.setCursor(10, 10);tft.print(texte);
+  tft.fillRoundRect(20,100,280,54,10,ILI9341_BLACK);
+  tft.setTextSize(4);tft.setTextColor(ILI9341_WHITE);tft.setCursor(25, 110);tft.print(title);
+  tft.fillCircle(95, 190, 25, ILI9341_PINK);
+  tft.drawCircle(95, 190, 25, ILI9341_BLUE);
+  tft.drawCircle(95, 190, 20, ILI9341_BLUE);
+  tft.setTextColor(ILI9341_BLACK);tft.setCursor(85, 175);tft.print(Lettre1);
+  tft.fillCircle(225, 190, 25, ILI9341_PINK);
+  tft.drawCircle(225, 190, 25, ILI9341_BLUE);
+  tft.drawCircle(225, 190, 20, ILI9341_BLUE);
+  tft.setTextColor(ILI9341_WHITE);tft.setCursor(215, 175);tft.print(Lettre2);
+  tft.fillCircle(160, 190, 25, ILI9341_PINK);
+  tft.drawCircle(160, 190, 25, ILI9341_BLUE);
+  tft.drawCircle(160, 190, 20, ILI9341_BLUE);
+  tft.fillRoundRect(150,185,20,10,5,ILI9341_BLUE);
+  tft.fillTriangle(165, 180, 175, 190, 165, 200, ILI9341_BLUE);
+}
+void TransmitionMessageRecu(String Lettre2){
+  tft.setTextColor(ILI9341_BLACK);tft.setCursor(215, 175);tft.print(Lettre2);
+}
+
+
+
 bool Welcome(){
+  tft.setTextSize(2);
+  //TransmitionMessageRecu("A");
   tft.fillScreen(ILI9341_WHITE);
   tft.setTextColor(ILI9341_BLACK);
-  tft.setCursor(100, 10);tft.print("Bienvenue");
-  tft.setCursor(10, 110);tft.print("Touchez l'ecran pour");tft.setCursor(10, 135);tft.print("commencer");
+  tft.setCursor(10, 10);tft.print("Touchez l'ecran pour\n continuer");
+  tft.setTextSize(4);tft.setTextColor(ILI9341_WHITE);
+  tft.fillRoundRect(20,100,280,54,10,ILI9341_BLACK);tft.setCursor(25, 110);tft.print("Blockchain");
+  tft.fillCircle(95, 190, 25, ILI9341_PINK);
+  tft.drawCircle(95, 190, 25, ILI9341_BLUE);
+  tft.drawCircle(95, 190, 20, ILI9341_BLUE);
+  tft.setCursor(85, 174);tft.print("B");
+  tft.fillCircle(225, 190, 25, ILI9341_PINK);
+  tft.drawCircle(225, 190, 25, ILI9341_BLUE);
+  tft.drawCircle(225, 190, 20, ILI9341_BLUE);
+  tft.setCursor(215, 174);tft.print("R");
+  tft.fillCircle(160, 190, 25, ILI9341_PINK);
+  tft.drawCircle(160, 190, 25, ILI9341_BLUE);
+  tft.drawCircle(160, 190, 20, ILI9341_BLUE);
+  tft.setCursor(150, 174);tft.print("J");
+  
+
   while (!ts.touched()){} // wait for touch
   insertion(); 
   return true;
 }
 bool insertion(){
   bool testcarte=false;
-  tft.fillScreen(ILI9341_WHITE);
-  tft.setTextColor(ILI9341_BLACK);
-  tft.setCursor(100, 10);tft.print("Bienvenue");
-  tft.setCursor(10, 110);tft.print("Veuillez scanner votre");tft.setCursor(10, 135);tft.print("carte");
-  while (!ts.touched()){} // wait for touch
-  carte_id = "71d5f58";
-  //carte_id = GetId();
+  carte_id = GetId();
   Serial.println(carte_id);
   AskData(String(carte_id));
   code();
@@ -345,6 +405,7 @@ void AskData(String carte_id){
   while (true){
     sendMsgToSlaveWithConfirmation("DATA");
     sendMsgToSlave(carte_id);
+    carte = "";
     while (true){
         delay(10);
         if (Serial3.available()>0){
@@ -362,19 +423,47 @@ void AskData(String carte_id){
     intCarteCode = ExtractFieldValue(carte, "C");
     //stringCarteCode+=String(intCarteCode); //marche pas
     solde = ExtractFieldValue(carte, "S");
-    break;
+    if (id != -1 && intCarteCode != -1 && solde != -1 ){
+      break;
+    }
   }
 }
-bool ModifyData(String carte_id, int newSolde, int newCarteCode){
+void AskDataReceiver(String carte_id){
+  while (true){
+    sendMsgToSlaveWithConfirmation("DATA");
+    sendMsgToSlave(carte_id);
+    carte = "";
+    while (true){
+        delay(10);
+        if (Serial3.available()>0){
+          delay(CommunicationDelay); // Wait for the short message to arrive
+          Serial.print("Decrypting cards details");
+          while (Serial3.available() > 0) {
+            char serialData = Serial3.read();
+            carte += String(serialData);
+          }
+          break;
+        }
+    }
+    Serial.println(carte);
+    soldeReceiver = ExtractFieldValue(carte, "S");
+    idReceiver = ExtractFieldValue(carte, "A");
+    intCarteCodeReceiver = ExtractFieldValue(carte, "C");
+    if (idReceiver != -1 && intCarteCodeReceiver != -1 && soldeReceiver != -1 ){
+      break;
+    }
+  }
+}
+bool ModifyData(String newId, String newCarteId, int newSolde, int newCarteCode){
   while (true){
     sendMsgToSlaveWithConfirmation("MODIFY");
-    sendMsgToSlave(carte_id);
+    sendMsgToSlave(newId);
     String response;
     while (true){
         delay(10);
         if (Serial3.available()>0){
           delay(CommunicationDelay); // Wait for the short message to arrive
-          Serial.print("Sending carte_id to blockchain");
+          Serial.print("Sending id to blockchain");
           while (Serial3.available() > 0) {
             char serialData = Serial3.read();
             response += String(serialData);
@@ -382,14 +471,14 @@ bool ModifyData(String carte_id, int newSolde, int newCarteCode){
           break;
         }
     }
-    if (response == "OK_CARTE"){
-      sendMsgToSlave(String(newSolde));
+    if (response == "OK_ID"){
+      sendMsgToSlave(newCarteId);
       response = "";
       while (true){
           delay(10);
           if (Serial3.available()>0){
             delay(CommunicationDelay); // Wait for the short message to arrive
-            Serial.print("Sending solde to blockchain");
+            Serial.print("Sending carte_id to blockchain");
             while (Serial3.available() > 0) {
               char serialData = Serial3.read();
               response += String(serialData);
@@ -397,8 +486,8 @@ bool ModifyData(String carte_id, int newSolde, int newCarteCode){
             break;
           }
       }
-      if (response == "OK_SOLDE"){
-        sendMsgToSlave(String(newCarteCode));
+      if (response == "OK_CARTE_ID"){
+        sendMsgToSlave(String(newSolde));
         response = "";
         while (true){
             delay(10);
@@ -412,33 +501,60 @@ bool ModifyData(String carte_id, int newSolde, int newCarteCode){
               break;
             }
         }
-        if (response == "OK_CODE"){
-          return true;
+        if (response == "OK_SOLDE"){
+          sendMsgToSlave(String(newCarteCode));
+          response = "";
+          while (true){
+              delay(10);
+              if (Serial3.available()>0){
+                delay(CommunicationDelay); // Wait for the short message to arrive
+                Serial.print("Sending carteCode to blockchain");
+                while (Serial3.available() > 0) {
+                  char serialData = Serial3.read();
+                  response += String(serialData);
+                }
+                break;
+              }
+          }
+          if (response == "OK_CODE"){
+            return true;
+        } else {
+          return false;
+        } 
+        } else {
+          return false;
+        }  
       } else {
         return false;
-      } 
-      } else {
-        return false;
-      }  
+      }
     } else {
       return false;
-    }  
+    } 
     break;
   }
 }
 
 void virement(){
+  tft.setTextSize(2);
   bool testouch=false;
   tft.fillScreen(ILI9341_WHITE);
   tft.setTextColor(ILI9341_BLACK);
-  tft.setCursor(10, 110);tft.print("Y a pas l'option");
+  tft.setCursor(10, 110);tft.print("Processus irreverssible");
   tft.setTextColor(ILI9341_WHITE);
   tft.fillRoundRect(5,195,94,24,10,ILI9341_BLACK);tft.setCursor(10, 200);tft.print("Annuler");
+  tft.fillRoundRect(205,195,94,24,10,ILI9341_BLACK);tft.setCursor(210, 200);tft.print("Valider");
   while(testouch==false){
     boolean touch = ts.touched();
     TS_Point p = ts.getPoint();
     if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){
     menu();
+    delay(100);
+    testouch=true;
+    }
+    if(touch && p.x>3200 && p.x<3600 && p.y>2700 &&p.y<3700){ // valider
+    autreMontantVirement();
+    delay(100);
+    testouch=true;
     delay(100);
     testouch=true;
     }
@@ -463,32 +579,52 @@ void retrait(){
   while(testouch==false){
     boolean touch = ts.touched();
     TS_Point p = ts.getPoint();
-    tft.fillRect(50, 180, 140, 60, ILI9341_WHITE);
-  tft.setTextColor(ILI9341_DARKGREEN);
-  tft.setCursor(10, 180);tft.print("X = ");tft.print(p.x);
-  tft.setCursor(10, 210);tft.print("Y = ");tft.print(p.y);
     if(touch && p.x>1200 && p.x<2200 && p.y>200 &&p.y<800){
     soldeTemp=10;
-    Serial.println("10$");
+    tft.setTextColor(ILI9341_WHITE);
+    tft.fillRoundRect(85,95,45,24,10,ILI9341_BLACK);tft.setCursor(90, 100);tft.print("20$");
+    tft.fillRoundRect(165,95,45,24,10,ILI9341_BLACK);tft.setCursor(170, 100);tft.print("50$");
+    tft.fillRoundRect(240,95,55,24,10,ILI9341_BLACK);tft.setCursor(245, 100);tft.print("100$");
+    tft.setTextColor(ILI9341_BLACK);
+    tft.fillRoundRect(10,95,45,24,10,ILI9341_WHITE);tft.setCursor(15, 100);tft.print("10$");
+    tft.drawRoundRect(10,95,45,24,10,ILI9341_BLACK);
     delay(100);
     }
     if(touch && p.x>1200 && p.x<2200 && p.y>1200 &&p.y<1800){
     soldeTemp=20;
-    Serial.println("20$");
+    tft.setTextColor(ILI9341_WHITE);
+    tft.fillRoundRect(10,95,45,24,10,ILI9341_BLACK);tft.setCursor(15, 100);tft.print("10$");
+    tft.fillRoundRect(165,95,45,24,10,ILI9341_BLACK);tft.setCursor(170, 100);tft.print("50$");
+    tft.fillRoundRect(240,95,55,24,10,ILI9341_BLACK);tft.setCursor(245, 100);tft.print("100$");
+    tft.setTextColor(ILI9341_BLACK);
+    tft.fillRoundRect(85,95,45,24,10,ILI9341_WHITE);tft.setCursor(90, 100);tft.print("20$");
+    tft.drawRoundRect(85,95,45,24,10,ILI9341_BLACK);
     delay(100);
     }
     if(touch && p.x>1200 && p.x<2200 && p.y>2200 &&p.y<2800){
     soldeTemp=50;
-    Serial.println("50$");
+    tft.setTextColor(ILI9341_WHITE);
+    tft.fillRoundRect(10,95,45,24,10,ILI9341_BLACK);tft.setCursor(15, 100);tft.print("10$");
+    tft.fillRoundRect(85,95,45,24,10,ILI9341_BLACK);tft.setCursor(90, 100);tft.print("20$");
+    tft.fillRoundRect(240,95,55,24,10,ILI9341_BLACK);tft.setCursor(245, 100);tft.print("100$");
+    tft.setTextColor(ILI9341_BLACK);
+    tft.fillRoundRect(165,95,45,24,10,ILI9341_WHITE);tft.setCursor(170, 100);tft.print("50$");
+    tft.drawRoundRect(165,95,45,24,10,ILI9341_BLACK);
     delay(100);
     }
     if(touch && p.x>1200 && p.x<2200 && p.y>3200 &&p.y<3800){
     soldeTemp=100;
-    Serial.println("100$");
+    tft.setTextColor(ILI9341_WHITE);
+    tft.fillRoundRect(10,95,45,24,10,ILI9341_BLACK);tft.setCursor(15, 100);tft.print("10$");
+    tft.fillRoundRect(85,95,45,24,10,ILI9341_BLACK);tft.setCursor(90, 100);tft.print("20$");
+    tft.fillRoundRect(165,95,45,24,10,ILI9341_BLACK);tft.setCursor(170, 100);tft.print("50$");
+    tft.setTextColor(ILI9341_BLACK);
+    tft.fillRoundRect(240,95,55,24,10,ILI9341_WHITE);tft.setCursor(245, 100);tft.print("100$");
+    tft.drawRoundRect(240,95,55,24,10,ILI9341_BLACK);
     delay(100);
     }
     if(touch && p.x>2300 && p.x<2700 && p.y>1100 &&p.y<3000){
-    autreMontant();
+    autreMontantRetrait();
     delay(100);
     }
     if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){ //annuler
@@ -497,6 +633,7 @@ void retrait(){
     testouch=true;
     }
     if(touch && p.x>3200 && p.x<3600 && p.y>2700 &&p.y<3700){ // valider
+    while (!ModifyData(String(id), carte_id, solde-soldeTemp, intCarteCode)){}
     solde-=soldeTemp;
     Serial.println(soldeTemp);
     menu();
@@ -506,11 +643,12 @@ void retrait(){
   }
 }
 void depot(){
+  tft.setTextSize(2);
   bool testouch=false;
   tft.fillScreen(ILI9341_WHITE);
   tft.setTextColor(ILI9341_BLACK);
-  tft.setCursor(110, 10);tft.print("Retrait");
-  tft.setCursor(10, 30);tft.print("Combien voulez vous \n déposer?");
+  tft.setCursor(110, 10);tft.print("Depot");
+  tft.setCursor(10, 30);tft.print("Combien voulez vous \n deposer?");
   tft.setTextColor(ILI9341_WHITE);
   tft.fillRoundRect(10,195,94,24,10,ILI9341_BLACK);tft.setCursor(15, 200);tft.print("Annuler");
   tft.fillRoundRect(205,195,94,24,10,ILI9341_BLACK);tft.setCursor(210, 200);tft.print("Valider");
@@ -523,29 +661,56 @@ void depot(){
   while(testouch==false){
     boolean touch = ts.touched();
     TS_Point p = ts.getPoint();
-    tft.fillRect(50, 180, 140, 60, ILI9341_WHITE);
-  tft.setTextColor(ILI9341_DARKGREEN);
-  tft.setCursor(10, 180);tft.print("X = ");tft.print(p.x);
-  tft.setCursor(10, 210);tft.print("Y = ");tft.print(p.y);
+  //tft.fillRect(50, 180, 140, 60, ILI9341_WHITE);
+  //tft.setTextColor(ILI9341_DARKGREEN);
+  //tft.setCursor(10, 180);tft.print("X = ");tft.print(p.x);
+  //tft.setCursor(10, 210);tft.print("Y = ");tft.print(p.y);
     if(touch && p.x>1200 && p.x<2200 && p.y>200 &&p.y<800){
     soldeTemp=10;
-    Serial.println("10$");
+    tft.setTextColor(ILI9341_WHITE);
+    tft.fillRoundRect(85,95,45,24,10,ILI9341_BLACK);tft.setCursor(90, 100);tft.print("20$");
+    tft.fillRoundRect(165,95,45,24,10,ILI9341_BLACK);tft.setCursor(170, 100);tft.print("50$");
+    tft.fillRoundRect(240,95,55,24,10,ILI9341_BLACK);tft.setCursor(245, 100);tft.print("100$");
+    tft.setTextColor(ILI9341_BLACK);
+    tft.fillRoundRect(10,95,45,24,10,ILI9341_WHITE);tft.setCursor(15, 100);tft.print("10$");
+    tft.drawRoundRect(10,95,45,24,10,ILI9341_BLACK);
     delay(100);
     }
     if(touch && p.x>1200 && p.x<2200 && p.y>1200 &&p.y<1800){
     soldeTemp=20;
+    tft.setTextColor(ILI9341_WHITE);
+    tft.fillRoundRect(10,95,45,24,10,ILI9341_BLACK);tft.setCursor(15, 100);tft.print("10$");
+    tft.fillRoundRect(165,95,45,24,10,ILI9341_BLACK);tft.setCursor(170, 100);tft.print("50$");
+    tft.fillRoundRect(240,95,55,24,10,ILI9341_BLACK);tft.setCursor(245, 100);tft.print("100$");
+    tft.setTextColor(ILI9341_BLACK);
+    tft.fillRoundRect(85,95,45,24,10,ILI9341_WHITE);tft.setCursor(90, 100);tft.print("20$");
+    tft.drawRoundRect(85,95,45,24,10,ILI9341_BLACK);
     delay(100);
     }
     if(touch && p.x>1200 && p.x<2200 && p.y>2200 &&p.y<2800){
     soldeTemp=50;
+    tft.setTextColor(ILI9341_WHITE);
+    tft.fillRoundRect(10,95,45,24,10,ILI9341_BLACK);tft.setCursor(15, 100);tft.print("10$");
+    tft.fillRoundRect(85,95,45,24,10,ILI9341_BLACK);tft.setCursor(90, 100);tft.print("20$");
+    tft.fillRoundRect(240,95,55,24,10,ILI9341_BLACK);tft.setCursor(245, 100);tft.print("100$");
+    tft.setTextColor(ILI9341_BLACK);
+    tft.fillRoundRect(165,95,45,24,10,ILI9341_WHITE);tft.setCursor(170, 100);tft.print("50$");
+    tft.drawRoundRect(165,95,45,24,10,ILI9341_BLACK);
     delay(100);
     }
     if(touch && p.x>1200 && p.x<2200 && p.y>3200 &&p.y<3800){
     soldeTemp=100;
+    tft.setTextColor(ILI9341_WHITE);
+    tft.fillRoundRect(10,95,45,24,10,ILI9341_BLACK);tft.setCursor(15, 100);tft.print("10$");
+    tft.fillRoundRect(85,95,45,24,10,ILI9341_BLACK);tft.setCursor(90, 100);tft.print("20$");
+    tft.fillRoundRect(165,95,45,24,10,ILI9341_BLACK);tft.setCursor(170, 100);tft.print("50$");
+    tft.setTextColor(ILI9341_BLACK);
+    tft.fillRoundRect(240,95,55,24,10,ILI9341_WHITE);tft.setCursor(245, 100);tft.print("100$");
+    tft.drawRoundRect(240,95,55,24,10,ILI9341_BLACK);
     delay(100);
     }
     if(touch && p.x>2300 && p.x<2700 && p.y>1100 &&p.y<3000){
-    autreMontant();
+    autreMontantDepot();
     delay(100);
     }
     if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){ //annuler
@@ -583,7 +748,7 @@ void depot_confirmation(int soldeTemp){
     testouch=true;
     }
     if(touch && p.x>3200 && p.x<3600 && p.y>2700 &&p.y<3700){
-    while (!ModifyData(carte_id, solde+montant, intCarteCode)){}
+    while (!ModifyData(String(id), carte_id, solde+montant, intCarteCode)){}
       solde+=montant;
     menu();
     delay(100);
@@ -592,6 +757,7 @@ void depot_confirmation(int soldeTemp){
   }
 }
 bool code(){
+  tft.setTextSize(2);
   bool testcode=false;
   tft.fillScreen(ILI9341_WHITE);
   tft.setTextColor(ILI9341_BLACK);
@@ -641,6 +807,8 @@ bool code(){
     return true;
   } else {
     Serial.println("Les codes ne correspondent pas ");
+    TransmitionMessage("Code faux", "La Blockchain a refuse\n votre demande", "O", "K");
+    delay(3000);
     // check screen + error
     return false;
   }
@@ -652,7 +820,8 @@ unsigned long aurevoir(){
   delay(2000);
 }
 
-void autreMontant(){
+void autreMontantRetrait(){
+  tft.setTextSize(2);
   bool testouch=false;
   int montant=10;
   tft.fillScreen(ILI9341_WHITE);
@@ -676,10 +845,97 @@ void autreMontant(){
     testouch=true;
     }
     if(touch && p.x>3200 && p.x<3600 && p.y>2700 &&p.y<3700){
-    solde=solde-montant;
+    while (!ModifyData(String(id), carte_id, solde-montant, intCarteCode)){}
+    solde-=montant;
     menu();
     delay(100);
     testouch=true;
+    }
+    if(touch && p.x>1800 && p.x<2200 && p.y>1100 &&p.y<1500){
+    montant=montant-10;
+    delay(100);
+    }
+    if(touch && p.x>1800 && p.x<2200 && p.y>2600 &&p.y<3000){
+    montant=montant+10;
+    delay(100);
+    }
+    delay(100);
+  }
+}
+void autreMontantDepot(){
+  bool testouch=false;
+  int montant=10;
+  tft.fillScreen(ILI9341_WHITE);
+  tft.setTextColor(ILI9341_BLACK);
+  tft.setCursor(110, 10);tft.print("Depot");
+  tft.setCursor(10, 30);tft.print("Combien voulez vous \n déposer?");
+  tft.setTextColor(ILI9341_WHITE);
+  tft.setTextSize(3);
+  tft.fillRoundRect(215,105,30,30,10,ILI9341_BLACK);tft.setCursor(222, 110);tft.print("+");
+  tft.fillRoundRect(75,105,30,30,10,ILI9341_BLACK);tft.setCursor(82, 110);tft.print("-");
+  tft.setTextSize(2);
+  tft.fillRoundRect(5,195,94,24,10,ILI9341_BLACK);tft.setCursor(10, 200);tft.print("Annuler");
+  tft.fillRoundRect(205,195,94,24,10,ILI9341_BLACK);tft.setCursor(210, 200);tft.print("Valider");
+  while(testouch==false){
+    tft.fillRoundRect(115,105,94,30,10,ILI9341_BLACK);tft.setCursor(120, 110);tft.print(montant);tft.print("$");
+    boolean touch = ts.touched();
+    TS_Point p = ts.getPoint();
+    if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){
+    depot();
+    delay(100);
+    testouch=true;
+    }
+    if(touch && p.x>3200 && p.x<3600 && p.y>2700 &&p.y<3700){
+    while (!ModifyData(String(id), carte_id, solde+montant, intCarteCode)){}
+    solde+=montant;
+    menu();
+    delay(100);
+    testouch=true;
+    }
+    if(touch && p.x>1800 && p.x<2200 && p.y>1100 &&p.y<1500){
+    montant=montant-10;
+    delay(100);
+    }
+    if(touch && p.x>1800 && p.x<2200 && p.y>2600 &&p.y<3000){
+    montant=montant+10;
+    delay(100);
+    }
+    delay(100);
+  }
+}
+void autreMontantVirement(){
+  tft.setTextSize(2);
+  bool testouch=false;
+  int montant=10;
+  tft.fillScreen(ILI9341_WHITE);
+  tft.setTextColor(ILI9341_BLACK);
+  tft.setCursor(110, 10);tft.print("Virement");
+  tft.setCursor(10, 30);tft.print("Combien voulez vous \n transferer?");
+  tft.setTextColor(ILI9341_WHITE);
+  tft.setTextSize(3);
+  tft.fillRoundRect(215,105,30,30,10,ILI9341_BLACK);tft.setCursor(222, 110);tft.print("+");
+  tft.fillRoundRect(75,105,30,30,10,ILI9341_BLACK);tft.setCursor(82, 110);tft.print("-");
+  tft.setTextSize(2);
+  tft.fillRoundRect(5,195,94,24,10,ILI9341_BLACK);tft.setCursor(10, 200);tft.print("Annuler");
+  tft.fillRoundRect(205,195,94,24,10,ILI9341_BLACK);tft.setCursor(210, 200);tft.print("Valider");
+  while(testouch==false){
+    tft.fillRoundRect(115,105,94,30,10,ILI9341_BLACK);tft.setCursor(120, 110);tft.print(montant);tft.print("$");
+    boolean touch = ts.touched();
+    TS_Point p = ts.getPoint();
+    if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){
+    menu();
+    delay(100);
+    testouch=true;
+    }
+    if(touch && p.x>3200 && p.x<3600 && p.y>2700 &&p.y<3700){
+        while (!ModifyData(String(id), carte_id, solde-montant, intCarteCode)){}
+        receiver = GetId();
+        AskDataReceiver(receiver);
+        while (!ModifyData(String(idReceiver), receiver, soldeReceiver+montant, intCarteCodeReceiver)){}
+        solde-=montant;
+        menu();
+        delay(100);
+        testouch=true;
     }
     if(touch && p.x>1800 && p.x<2200 && p.y>1100 &&p.y<1500){
     montant=montant-10;

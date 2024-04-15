@@ -2,8 +2,6 @@
 * Main:                                                                                                                                 *
 *   Contient les Variables globales.                                                                                                    *
 ****************************************************************************************************************************************/
-int TimeoutMsgResponse=1000; //Temps d'attente pour recevoir un message
-int TimeoutArduinoUno=60000; //Temps d'attente pour comprendre que la UNO est KO
 String ArduinoUnoData;       //Message reçu de UNO, peut être positif ou indéchiffrable, sert de stockage tampon pour vérifier si le message est reconnu
 String carte_id;
 String carte_code;
@@ -15,7 +13,10 @@ bool DebugSerialPrinln=false;
 *   Contient les fonctions de communication avec la Database                                                                                             *
 ****************************************************************************************************************************************/
 
-//
+#define pinReset D2
+void WifiReset() {
+    digitalWrite(pinReset, LOW);
+}
 #include <ESPping.h>
 #include <ping.h>
 #include <ESP8266HTTPClient.h>
@@ -30,6 +31,9 @@ String server="projet-e2-eseo.000webhostapp.com";
 const char* host = "www.google.com";
 
 void WifiSetup(){
+  delay(200); 
+  pinMode(pinReset, OUTPUT);   
+  digitalWrite(pinReset, HIGH);
   Serial.println("2/2 Internet ...");
   Serial.println("Connexion au réseau Wifi");
   WiFi.begin(WIFI_SSID, WIFI_PASS);
@@ -48,12 +52,12 @@ bool IsConnectionActive(){
     return true;
   } else {
     Serial.println("Connection is not active, unable to ping.");
-    delay(1000);
+    WifiReset();    
     return false;
   }
 }
 void SendDataToDatabase(String carte_id, String solde, String carte_code){
-  if(IsConnectionActive()){
+  //if(IsConnectionActive()){
     Serial.println("Arduino>>>Server (active connection>>>execute function)");
     data = "carte_id=" + String(carte_id) + "&solde=" + String(solde) + "&carte_code=" + String(carte_code);
 
@@ -68,8 +72,9 @@ void SendDataToDatabase(String carte_id, String solde, String carte_code){
     } else {
       Serial.println("HTTP POST FAILED, check wireless connection");
       Serial.println(httpCode);
+      WifiReset();
     }
-    if (httpCode == HTTP_CODE_MOVED_PERMANENTLY || httpCode == HTTP_CODE_FOUND) {
+    /*if (httpCode == HTTP_CODE_MOVED_PERMANENTLY || httpCode == HTTP_CODE_FOUND) { // utile?
       String newUrl = http.header("Location");
       Serial.println(newUrl);
       // Effectuez une nouvelle requête vers la nouvelle URL
@@ -77,14 +82,14 @@ void SendDataToDatabase(String carte_id, String solde, String carte_code){
       http.begin(client, newUrl);
       http.addHeader("Content-Type", "application/x-www-form-urlencoded");
       httpCode = http.POST(data);
-    }
+    }*/
     http.end();
-  }
+  //}
   
   // Faire une vérification en gettant les données et vérifiant si elles match parfaitement.
 }
 String ReceiveDataFromDatabase(String carte_id){
-  if(IsConnectionActive()){
+  //if(IsConnectionActive()){
     Serial.println("Server>>>Arduino (active connection>>>execute function)");
     String url = "http://"+server+"/get_data.php?carte_id=" + carte_id;
     HTTPClient http;
@@ -99,16 +104,17 @@ String ReceiveDataFromDatabase(String carte_id){
     } else {
       Serial.println("HTTP GET FAILED, check wireless connection");
       Serial.println(httpCode);
+      WifiReset();
     }
     http.end();
     return data_received;
-  }
-  return "null";
+  //}
+  return "pblm";
 }
-void ModifyDataToDatabase(String carte_id, String solde, String carte_code){
-  if(IsConnectionActive()){
+void ModifyDataToDatabase(String id, String carte_id, String solde, String carte_code){
+  //if(IsConnectionActive()){
     Serial.println("Arduino>>>Server (active connection>>>execute function)");
-    data = "carte_id=" + String(carte_id) + "&solde=" + String(solde) + "&carte_code=" + String(carte_code);
+    data = "id=" + String(id) + "&carte_id=" + String(carte_id) + "&solde=" + String(solde) + "&carte_code=" + String(carte_code);
 
     String url = "http://" + server + "/edit.php";
     HTTPClient http;
@@ -121,8 +127,9 @@ void ModifyDataToDatabase(String carte_id, String solde, String carte_code){
     } else {
       Serial.println("HTTP POST FAILED, check wireless connection");
       Serial.println(httpCode);
+      WifiReset();
     }
-    if (httpCode == HTTP_CODE_MOVED_PERMANENTLY || httpCode == HTTP_CODE_FOUND) {
+    /*if (httpCode == HTTP_CODE_MOVED_PERMANENTLY || httpCode == HTTP_CODE_FOUND) {
       String newUrl = http.header("Location");
       Serial.println(newUrl);
       // Effectuez une nouvelle requête vers la nouvelle URL
@@ -130,9 +137,9 @@ void ModifyDataToDatabase(String carte_id, String solde, String carte_code){
       http.begin(client, newUrl);
       http.addHeader("Content-Type", "application/x-www-form-urlencoded");
       httpCode = http.POST(data);
-    }
+    }*/
     http.end();
-  }
+  //}
   
   // Faire une vérification en gettant les données et vérifiant si elles match parfaitement.
 }
@@ -144,9 +151,11 @@ void ModifyDataToDatabase(String carte_id, String solde, String carte_code){
 #include <SoftwareSerial.h>
 #define rxPin D14
 #define txPin D15 // j'ai essayé d'inverser ok ici (pas check l'envoie mais reception ok)
-int CommunicationDelay=1000;
-int ConsoleRefreshDelay=1000;
-int SlaveTimeout=60000;
+int CommunicationDelay=20;
+int ConsoleRefreshDelay=20;
+int SlaveTimeout=3000;
+int TimeoutMsgResponse=20; //Temps d'attente pour recevoir un message
+int TimeoutArduinoUno=3000; //Temps d'attente pour comprendre que la UNO est KO
 SoftwareSerial mySerial (rxPin, txPin);
 
 void sendMsgToMaster(String message) {
@@ -206,7 +215,7 @@ void COMSetup() {
   Serial.println("\n1/2 Communication ...");
   pinMode(rxPin, INPUT);
   pinMode(txPin, OUTPUT);
-  mySerial.begin(9600);
+  mySerial.begin(38400);
   Serial.println("Communication prête !");
 }
 
@@ -233,69 +242,88 @@ void loop() {
       sendMsgToMaster("OK");
     }
     if (StringBuilder == "DATA"){ // Message pour la récupération des données
-      sendMsgToMaster("OK");
-      String receivedMessage = "";
-      while (true){
-        delay(10);
-        if (mySerial.available()>0){
-          delay(CommunicationDelay); // Wait for the short message to arrive
-          Serial.print("Decrypting cards details");
-          while (mySerial.available() > 0) {
-            char serialData = mySerial.read();
-            receivedMessage += String(serialData);
+      //if(IsConnectionActive()){
+        sendMsgToMaster("OK");
+        String receivedMessage = "";
+        while (true){
+          delay(10);
+          if (mySerial.available()>0){
+            delay(CommunicationDelay); // Wait for the short message to arrive
+            Serial.println("Decrypting cards details");
+            while (mySerial.available() > 0) {
+              char serialData = mySerial.read();
+              receivedMessage += String(serialData);
+            }
+            Serial.println(receivedMessage);
+            break;
           }
-          break;
         }
-      }
-      sendMsgToMaster(ReceiveDataFromDatabase(String(receivedMessage)));
+        sendMsgToMaster(ReceiveDataFromDatabase(String(receivedMessage)));
+      //}
     }
     if (StringBuilder == "MODIFY"){ // Message pour la récupération des données
-      sendMsgToMaster("OK");
-      String carte_id = "";
-      while (true){
-        delay(10);
-        if (mySerial.available()>0){
-          delay(CommunicationDelay); // Wait for the short message to arrive
-          Serial.print("Decrypting cards details");
-          while (mySerial.available() > 0) {
-            char serialData = mySerial.read();
-            carte_id += String(serialData);
+      //if(IsConnectionActive()){
+        sendMsgToMaster("OK");
+        String id = "";
+        while (true){
+          if (mySerial.available()>0){
+            delay(CommunicationDelay); // Wait for the short message to arrive
+            Serial.print("Decrypting cards details");
+            while (mySerial.available() > 0) {
+              char serialData = mySerial.read();
+              id += String(serialData);
+            }
+            break;
           }
-          break;
         }
-      }
-      sendMsgToMaster("OK_CARTE");
-      String solde = "";
-      while (true){
-        delay(10);
-        if (mySerial.available()>0){
-          delay(CommunicationDelay); // Wait for the short message to arrive
-          Serial.print("Decrypting cards details");
-          while (mySerial.available() > 0) {
-            char serialData = mySerial.read();
-            solde += String(serialData);
+        Serial.println(id);
+        sendMsgToMaster("OK_ID");
+        String carte_id = "";
+        while (true){
+          if (mySerial.available()>0){
+            delay(CommunicationDelay); // Wait for the short message to arrive
+            Serial.print("Decrypting cards details");
+            while (mySerial.available() > 0) {
+              char serialData = mySerial.read();
+              carte_id += String(serialData);
+            }
+            break;
           }
-          break;
         }
-      }
-      sendMsgToMaster("OK_SOLDE");
-      String code = "";
-      while (true){
-        delay(10);
-        if (mySerial.available()>0){
-          delay(CommunicationDelay); // Wait for the short message to arrive
-          Serial.print("Decrypting cards details");
-          while (mySerial.available() > 0) {
-            char serialData = mySerial.read();
-            code += String(serialData);
+        Serial.println(carte_id);
+        sendMsgToMaster("OK_CARTE_ID");
+        String solde = "";
+        while (true){
+          if (mySerial.available()>0){
+            delay(CommunicationDelay); // Wait for the short message to arrive
+            Serial.print("Decrypting cards details");
+            while (mySerial.available() > 0) {
+              char serialData = mySerial.read();
+              solde += String(serialData);
+            }
+            break;
           }
-          break;
         }
-      }
-      ModifyDataToDatabase(carte_id, solde, code);
-      sendMsgToMaster("OK_CODE");
+        Serial.println(solde);
+        sendMsgToMaster("OK_SOLDE");
+        String code = "";
+        while (true){
+          if (mySerial.available()>0){
+            delay(CommunicationDelay); // Wait for the short message to arrive
+            Serial.print("Decrypting cards details");
+            while (mySerial.available() > 0) {
+              char serialData = mySerial.read();
+              code += String(serialData);
+            }
+            break;
+          }
+        }
+        Serial.println(code);
+        ModifyDataToDatabase(id, carte_id, solde, code);
+        sendMsgToMaster("OK_CODE");
 
 
+      //}
     }
   }
 }
