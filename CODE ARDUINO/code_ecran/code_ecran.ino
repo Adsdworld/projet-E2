@@ -90,7 +90,7 @@ void sendMsgToSlaveWithConfirmation(String message) {
   while (true){
     Serial3.print(message);
     delay(CommunicationDelay*3);
-    //delay(10);
+    delay(1000);
     if (Serial3.available()){
       receivedMessage = "";
       delay(CommunicationDelay); // Wait for the short message to arrive

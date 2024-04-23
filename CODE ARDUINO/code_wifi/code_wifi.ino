@@ -89,6 +89,7 @@ void SendDataToDatabase(String carte_id, String solde, String carte_code){
   // Faire une vérification en gettant les données et vérifiant si elles match parfaitement.
 }
 String ReceiveDataFromDatabase(String carte_id){
+  Serial.println(String("Identifiant de carte reçu: " + carte_id));
   //if(IsConnectionActive()){
     Serial.println("Server>>>Arduino (active connection>>>execute function)");
     String url = "http://"+server+"/get_data.php?carte_id=" + carte_id;
