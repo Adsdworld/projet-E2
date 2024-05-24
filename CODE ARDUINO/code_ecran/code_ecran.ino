@@ -1,37 +1,11 @@
-/*
-qinad onclique sur un bouton si il n'y a pas de changment d'écran inverser couleurs text et rectfill
-vérif int > ou < solde
-
-écran get information
-écran sending information
-écran information send
-
-empêcher les caractères A, B, C, car pas convertible en entier pour le test des codes.
-
-possibilité de modifier son code
-
-add a bit of security and details for information ttransmission
- - verify form of data (int)
- - verify response of slave who check response of http with a getdata.
-
-la carte wifi peut elle s'auto redémarrer sur un check google?
-
-
-prénom / vérifier présence enveloppe
-
-
-*/
-
 /****************************************************************************************************************************************
 * Main:                                                                                                                                 *
 *   Contient les Variables globales.                                                                                                    *
 ****************************************************************************************************************************************/
 #include <SPI.h>
 String carte;
-//String stringCarteCode;
-    //String stringCarteCode = String(""); // Créez une chaîne vide
-
 int intCarteCode;
+String stringCarteCode;
 int solde;
 int soldeReceiver;
 String carte_id;
@@ -68,7 +42,6 @@ bool COMSetup(int position, int totalPosition) {
   return true;
 }
 int CommunicationDelay=20;
-//int ConsoleRefreshDelay=1000;
 int TimeoutMsgResponse=20;
 int TimeoutArduinoUno=1000;
 int SlaveTimeout=3000;
@@ -143,11 +116,30 @@ int ExtractFieldValue(String dataReceived, String fieldName) {
   }
 }
 
+String ExtractFieldValueAsString(String dataReceived, String fieldName) {
+  const size_t capacity = JSON_OBJECT_SIZE(4) + 60; //ici il y a 4 valeurs: id, carte_id, solde, carte _code >>> à ajuster en fonction des données reçus
+  DynamicJsonDocument doc(capacity);
+  DeserializationError error = deserializeJson(doc, dataReceived);
+
+  if (error) {
+    Serial.print("Erreur de parsing JSON: ");
+    Serial.println(error.c_str());
+    return "-1"; // Valeur par défaut si le parsing échoue
+  }
+
+  // Vérifiez si le champ spécifié existe dans le JSON
+  if (doc.containsKey(fieldName)) {
+    return doc[fieldName].as<String>(); // Renvoie la valeur du champ sous forme d'entier
+  } else {
+    Serial.println(fieldName+" non trouvé dans le JSON");
+    return "-1"; // Champ non trouvé, renvoie une valeur par défaut
+  }
+}
 
 
 /****************************************************************************************************************************************
-* SCREEN:                                                                                                                   *
-*   Contient les fonctions pour l'écran                                                                                                   *
+* SCREEN:                                                                                                                               *
+*   Contient les fonctions pour l'écran                                                                                                 *
 ****************************************************************************************************************************************/
 #include <XPT2046_Touchscreen.h>
 #include <Adafruit_ILI9341.h>
@@ -171,7 +163,7 @@ bool ScreenSetup(int position, int totalPosition) {
 }
 
 /****************************************************************************************************************************************
-* RFID:                                                                                                                   *
+* RFID:                                                                                                                                 *
 *   Contient les fonctions pour le RFID                                                                                                 *
 ****************************************************************************************************************************************/
 // RST identique pour RST ECRAN & RFID
@@ -192,16 +184,15 @@ String GetId() {
   tft.setTextColor(ILI9341_BLACK);
   tft.setTextSize(2);tft.setCursor(100, 10);tft.print("Scan");
   tft.setTextSize(2);tft.setCursor(10, 110);tft.print("Veuillez scanner votre");tft.setCursor(10, 135);tft.print("carte");
-  while (!rfid.PICC_IsNewCardPresent()) {//il attends dans cette boucle, ajout de millis plus tard
-  }
+  while (!rfid.PICC_IsNewCardPresent()) {} //il attends dans cette boucle, ajout de millis plus tard
   if (!rfid.PICC_ReadCardSerial()) {
     String id;
     for (byte i = 0; i < 4; i++) {
       id += String(rfid.uid.uidByte[i], HEX);
     }
-    rfid.PICC_HaltA();     //permet d'arrêter la communication avec la carte
-    rfid.PCD_StopCrypto1();//permet d'arrêter la communication avec la carte
-    if(id==0000 || id=="0000"){
+    rfid.PICC_HaltA(); //permet d'arrêter la communication avec la carte
+    rfid.PCD_StopCrypto1();
+    if(id==0000 || id=="0000"){ // valeur reçu si échec
       return GetId();
     }else{
       return id;
@@ -211,7 +202,7 @@ String GetId() {
 }
 
 /****************************************************************************************************************************************
-* DIGICODE:                                                                                                                   *
+* DIGICODE:                                                                                                                             *
 *   Contient les fonctions pour le digicode                                                                                             *
 ****************************************************************************************************************************************/
 const int Ligne = 4;
@@ -226,7 +217,7 @@ int lignesPins[Ligne] = {22, 24, 26, 28}; // Broches pour les lignes (D0 à D3)
 int colonnesPins[Colonne] = {30, 32, 34, 36};
 bool DigicodeSetup(int position, int totalPosition){
   Serial.println(String(position)+"/"+String(totalPosition)+" Digicode ...");
-  for (int i = 0; i < Colonne; i++) {
+  for (int i = 0; i < Colonne; i++) { // initialisation des broches
     pinMode(colonnesPins[i], OUTPUT);
     digitalWrite(colonnesPins[i], HIGH);
   }
@@ -250,9 +241,7 @@ void getNumber(){
       for (int j = 0; j < Ligne; j++) {
         if (digitalRead(lignesPins[j]) == LOW) {
           // Attendez que le bouton soit relâché
-          while (digitalRead(lignesPins[j]) == LOW) {
-            //delay(10); //10ms
-          }
+          while (digitalRead(lignesPins[j]) == LOW) {}
           // Un bouton a été pressé dans la ligne j et la colonne i
           boutonPresse = hexaBouton[j][i];
           Serial.println(boutonPresse);
@@ -280,6 +269,7 @@ void setup() {
   RfidSetup(4, 5);
   DigicodeSetup(5, 5);
 
+  // orienter l'écran
   tft.setRotation(1);
   ts.setRotation(2);
   tft.fillScreen(ILI9341_WHITE);
@@ -289,14 +279,6 @@ void setup() {
 }
 
 void loop() {
-  /*boolean istouched = ts.touched();
-  TS_Point p = ts.getPoint();
-  tft.fillRect(50, 180, 140, 60, ILI9341_WHITE);
-  tft.setTextColor(ILI9341_DARKGREEN);
-  tft.setCursor(10, 180);tft.print("X = ");tft.print(p.x);
-  tft.setCursor(10, 210);tft.print("Y = ");tft.print(p.y);
-  istouched=false;
-  delay(100);*/
   Welcome();
 }
 void menu(){
@@ -361,34 +343,13 @@ void TransmitionMessage(String title, String texte, String Lettre1, String Lettr
   tft.fillRoundRect(150,185,20,10,5,ILI9341_BLUE);
   tft.fillTriangle(165, 180, 175, 190, 165, 200, ILI9341_BLUE);
 }
-void TransmitionMessageRecu(String Lettre2){
-  tft.setTextColor(ILI9341_BLACK);tft.setCursor(215, 175);tft.print(Lettre2);
-}
+
 
 
 
 bool Welcome(){
   tft.setTextSize(2);
-  //TransmitionMessageRecu("A");
-  tft.fillScreen(ILI9341_WHITE);
-  tft.setTextColor(ILI9341_BLACK);
-  tft.setCursor(10, 10);tft.print("Touchez l'ecran pour\n continuer");
-  tft.setTextSize(4);tft.setTextColor(ILI9341_WHITE);
-  tft.fillRoundRect(20,100,280,54,10,ILI9341_BLACK);tft.setCursor(25, 110);tft.print("Blockchain");
-  tft.fillCircle(95, 190, 25, ILI9341_PINK);
-  tft.drawCircle(95, 190, 25, ILI9341_BLUE);
-  tft.drawCircle(95, 190, 20, ILI9341_BLUE);
-  tft.setCursor(85, 174);tft.print("B");
-  tft.fillCircle(225, 190, 25, ILI9341_PINK);
-  tft.drawCircle(225, 190, 25, ILI9341_BLUE);
-  tft.drawCircle(225, 190, 20, ILI9341_BLUE);
-  tft.setCursor(215, 174);tft.print("R");
-  tft.fillCircle(160, 190, 25, ILI9341_PINK);
-  tft.drawCircle(160, 190, 25, ILI9341_BLUE);
-  tft.drawCircle(160, 190, 20, ILI9341_BLUE);
-  tft.setCursor(150, 174);tft.print("J");
-  
-
+  TransmitionMessage("<_> DAB <_>", "Touchez l'ecran pour\n continuer", "O", "K");
   while (!ts.touched()){} // wait for touch
   insertion(); 
   return true;
@@ -397,15 +358,27 @@ bool insertion(){
   bool testcarte=false;
   carte_id = GetId();
   Serial.println(carte_id);
-  AskData(String(carte_id));
+  while(true){
+    carte = AskData(String(carte_id));
+    id = ExtractFieldValue(carte, "A");
+    intCarteCode = ExtractFieldValue(carte, "C");
+    stringCarteCode = ExtractFieldValueAsString(carte, "C"); //marche pas
+    Serial.println(ExtractFieldValueAsString(carte, "P")); //marche pas
+    solde = ExtractFieldValue(carte, "S");
+    Serial.println("stringCarteCode" + String(stringCarteCode));
+    if (id != -1 && intCarteCode != -1 && solde != -1 ){
+      break;
+    }
+  }
   code();
   return true;
 }
-void AskData(String carte_id){
+String AskData(String carte_id){
+  String a;
   while (true){
     sendMsgToSlaveWithConfirmation("DATA");
     sendMsgToSlave(carte_id);
-    carte = "";
+    a = "";
     while (true){
         delay(10);
         if (Serial3.available()>0){
@@ -413,20 +386,15 @@ void AskData(String carte_id){
           Serial.print("Decrypting cards details");
           while (Serial3.available() > 0) {
             char serialData = Serial3.read();
-            carte += String(serialData);
+            a += String(serialData);
           }
           break;
         }
     }
-    Serial.println(carte);
-    id = ExtractFieldValue(carte, "A");
-    intCarteCode = ExtractFieldValue(carte, "C");
-    //stringCarteCode+=String(intCarteCode); //marche pas
-    solde = ExtractFieldValue(carte, "S");
-    if (id != -1 && intCarteCode != -1 && solde != -1 ){
-      break;
-    }
+    break;
+    Serial.println(a);
   }
+  return a;
 }
 void AskDataReceiver(String carte_id){
   while (true){
