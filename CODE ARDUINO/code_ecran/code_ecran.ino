@@ -1,21 +1,24 @@
+//#include <Adafruit_GFX.h>
+
 /****************************************************************************************************************************************
 * Main:                                                                                                                                 *
 *   Contient les Variables globales.                                                                                                    *
 ****************************************************************************************************************************************/
 #include <SPI.h>
-String carte;
-int intCarteCode;
-String stringCarteCode;
-int solde;
-int soldeReceiver;
-String carte_id;
+String carte; // stock les informations récupérées
+String id; // A in db
+String stringCarteCode; // C in db
+int solde; // S in db
+String stringCarteId; // I in db
+String pseudo; // P in db
 
-String receiver;
-int intCarteCodeReceiver;
-String carteIdReceiver;
-String idReceiver;
+String receiver; // stock les informations récupérées de celui qui reçoit le virement
+String stringCarteCodeReceiver; // code de celui qui reçoit le virement 
+int soldeReceiver; // solde de celui qui reçoit le virement
+String carteIdReceiver; // id de la carte de celui qui reçoit le virement
+String idReceiver; // id de la base de donnée de celui qui reçoit le virement
 
-String id;
+
 String pad;
 bool MainSetup(int position, int totalPosition){
   Serial.println(String(position)+"/"+String(totalPosition)+" Main ...");
@@ -43,14 +46,7 @@ bool COMSetup(int position, int totalPosition) {
 }
 int CommunicationDelay=20;
 int TimeoutMsgResponse=20;
-int TimeoutArduinoUno=1000;
-int SlaveTimeout=3000;
-unsigned long Timeout;
 
-void sendKeepAlive() {
-  Serial3.print("KA");
-  Serial.print("Keep alive");
-}
 void sendMsgToSlave(String message) {
   Serial3.print(message);
   Serial.println("Un message à été envoyé:"+message);
@@ -58,7 +54,7 @@ void sendMsgToSlave(String message) {
 }
 void sendMsgToSlaveWithConfirmation(String message) {
   Serial.println("\n***Sending '"+message+"' with confirmation to Slave");
-  TransmitionMessage("transaction", "Communication en cours...", "O", "K");
+  TransmitionMessage("transaction", "Communication en cours...", "O", "K"); // affichage écran de communication
   String receivedMessage = "";
   while (true){
     Serial3.print(message);
@@ -79,25 +75,11 @@ void sendMsgToSlaveWithConfirmation(String message) {
         Serial.println("\nMessage reçu:"+receivedMessage);
       }
     }
-    Serial.print("."+String(Serial3.available()));
+    Serial.print(".");
   }
-}
-String ReadInstantMsgFromArduino(){
-  String StringBuilder="";
-  while(true){
-    if (0<Serial.available()){
-      delay(TimeoutMsgResponse); //laisser un peu de temps pour que le court message arrive
-      while(Serial.available()>0){
-        char Serialdata =Serial.read();
-        StringBuilder+=String(Serialdata);
-      }
-      return StringBuilder;
-    }
-  }
-  return "NO MESSAGE FOUND";
 }
 int ExtractFieldValue(String dataReceived, String fieldName) {
-  const size_t capacity = JSON_OBJECT_SIZE(4) + 60; //ici il y a 4 valeurs: id, carte_id, solde, carte _code >>> à ajuster en fonction des données reçus
+  const size_t capacity = JSON_OBJECT_SIZE(4) + 60; //ici il y a 4 valeurs: id, carteId, solde, carteCode >>> à ajuster en fonction des données reçus
   DynamicJsonDocument doc(capacity);
   DeserializationError error = deserializeJson(doc, dataReceived);
 
@@ -117,7 +99,7 @@ int ExtractFieldValue(String dataReceived, String fieldName) {
 }
 
 String ExtractFieldValueAsString(String dataReceived, String fieldName) {
-  const size_t capacity = JSON_OBJECT_SIZE(4) + 60; //ici il y a 4 valeurs: id, carte_id, solde, carte _code >>> à ajuster en fonction des données reçus
+  const size_t capacity = JSON_OBJECT_SIZE(4) + 60; //ici il y a 4 valeurs: id, carteId, solde, carteCode >>> à ajuster en fonction des données reçus
   DynamicJsonDocument doc(capacity);
   DeserializationError error = deserializeJson(doc, dataReceived);
 
@@ -143,8 +125,7 @@ String ExtractFieldValueAsString(String dataReceived, String fieldName) {
 ****************************************************************************************************************************************/
 #include <XPT2046_Touchscreen.h>
 #include <Adafruit_ILI9341.h>
-#include <Adafruit_GFX.h>
-#define CS_PIN_TOUCH_SCREEN  47 //SS + CS = Slave Select
+#define CS_PIN_TOUCH_SCREEN  47 
 #define TFT_DC  49
 #define TFT_CS 53
 #define RST_PIN 48
@@ -166,7 +147,6 @@ bool ScreenSetup(int position, int totalPosition) {
 * RFID:                                                                                                                                 *
 *   Contient les fonctions pour le RFID                                                                                                 *
 ****************************************************************************************************************************************/
-// RST identique pour RST ECRAN & RFID
 #include <MFRC522.h> //RFID
 #define CS_PIN_RFID 43 
 #define RST_PIN_RFID 41 
@@ -179,12 +159,12 @@ bool RfidSetup(int position, int totalPosition){
   Serial.println("Rfid prêt !");
   return true;
 }
-String GetId() {
+String GetId() { // pour récupérer l'identifiant d'une carte
   tft.fillScreen(ILI9341_WHITE);
   tft.setTextColor(ILI9341_BLACK);
   tft.setTextSize(2);tft.setCursor(100, 10);tft.print("Scan");
   tft.setTextSize(2);tft.setCursor(10, 110);tft.print("Veuillez scanner votre");tft.setCursor(10, 135);tft.print("carte");
-  while (!rfid.PICC_IsNewCardPresent()) {} //il attends dans cette boucle, ajout de millis plus tard
+  while (!rfid.PICC_IsNewCardPresent()) {} //il attends dans cette boucle
   if (!rfid.PICC_ReadCardSerial()) {
     String id;
     for (byte i = 0; i < 4; i++) {
@@ -192,7 +172,7 @@ String GetId() {
     }
     rfid.PICC_HaltA(); //permet d'arrêter la communication avec la carte
     rfid.PCD_StopCrypto1();
-    if(id==0000 || id=="0000"){ // valeur reçu si échec
+    if(id=="0000"){ // valeur reçu si échec
       return GetId();
     }else{
       return id;
@@ -227,7 +207,7 @@ bool DigicodeSetup(int position, int totalPosition){
   Serial.println("Digicode prêt !");
   return true;
 }
-void getNumber(){
+void getNumber(){ // récupérer la touche pressé
   String boutonPresse; // stocke le caractère
   bool play = true; // controle la boucle principale
   while (play){ // boucle principale
@@ -257,11 +237,6 @@ void getNumber(){
   }
 }
 
-
-
-
-
-
 void setup() {
   COMSetup(1, 5);
   MainSetup(2, 5);
@@ -287,7 +262,7 @@ void menu(){
   tft.fillScreen(ILI9341_WHITE);
   tft.setTextColor(ILI9341_BLACK);
   tft.setCursor(50, 10);tft.print("Votre solde est de ");
-  tft.setCursor(140, 40);tft.print(solde);tft.print("$");
+  tft.setCursor(140, 40);tft.print(pseudo+": ");tft.print(solde);tft.print("$");
   tft.setCursor(10, 80);tft.print("Que voulez-vous faire?");
   tft.setTextColor(ILI9341_WHITE);
   tft.fillRoundRect(5,135,94,24,10,ILI9341_BLACK);tft.setCursor(10, 140);tft.print("Retrait");
@@ -297,10 +272,6 @@ void menu(){
   delay(500);
   while(testouch==false){
     TS_Point p = ts.getPoint();
-  //tft.fillRect(50, 18, 140, 60, ILI9341_WHITE);
-  //tft.setTextColor(ILI9341_DARKGREEN);
-  //tft.setCursor(10, 18);tft.print("X = ");tft.print(p.x);
-  //tft.setCursor(10, 50);tft.print("Y = ");tft.print(p.y);
     boolean touch = ts.touched();
     if(touch && p.x>2300 && p.x<2600 && p.y>450 &&p.y<1500){
     retrait();
@@ -314,7 +285,7 @@ void menu(){
     }
     if(touch && p.x>2300 && p.x<2600 && p.y>2700 &&p.y<3800){
     testouch=true;
-    virement();
+    autreMontantVirement();
     delay(100);
     }
     if(touch && p.x>3200 && p.x<4000 && p.y>1100 &&p.y<2900){
@@ -347,43 +318,41 @@ void TransmitionMessage(String title, String texte, String Lettre1, String Lettr
 
 
 
-bool Welcome(){
+bool Welcome(){ // écran d'acceuil
   tft.setTextSize(2);
   TransmitionMessage("<_> DAB <_>", "Touchez l'ecran pour\n continuer", "O", "K");
   while (!ts.touched()){} // wait for touch
-  insertion(); 
+  identification(); 
   return true;
 }
-bool insertion(){
-  bool testcarte=false;
-  carte_id = GetId();
-  Serial.println(carte_id);
+bool identification(){ // connexion
+  stringCarteId = GetId();
+  Serial.println("identifiant de la carte scannée: "+stringCarteId);
   while(true){
-    carte = AskData(String(carte_id));
-    id = ExtractFieldValue(carte, "A");
-    intCarteCode = ExtractFieldValue(carte, "C");
+    carte = AskData(stringCarteId);
+    id = ExtractFieldValue(carte, "A"); //
     stringCarteCode = ExtractFieldValueAsString(carte, "C"); //marche pas
-    Serial.println(ExtractFieldValueAsString(carte, "P")); //marche pas
+    pseudo = ExtractFieldValueAsString(carte, "P");
     solde = ExtractFieldValue(carte, "S");
-    Serial.println("stringCarteCode" + String(stringCarteCode));
-    if (id != -1 && intCarteCode != -1 && solde != -1 ){
+    if (id != "-1" && solde != -1 && stringCarteCode != "-1" && pseudo != "-1"){ // si erreur
       break;
     }
   }
+  Serial.println("stringCarteCode: "+stringCarteCode); // affichage du code
   code();
   return true;
 }
-String AskData(String carte_id){
+String AskData(String CarteId){
   String a;
   while (true){
     sendMsgToSlaveWithConfirmation("DATA");
-    sendMsgToSlave(carte_id);
+    sendMsgToSlave(CarteId);
     a = "";
     while (true){
         delay(10);
         if (Serial3.available()>0){
           delay(CommunicationDelay); // Wait for the short message to arrive
-          Serial.print("Decrypting cards details");
+          Serial.println("Decrypting cards details");
           while (Serial3.available() > 0) {
             char serialData = Serial3.read();
             a += String(serialData);
@@ -396,16 +365,16 @@ String AskData(String carte_id){
   }
   return a;
 }
-void AskDataReceiver(String carte_id){
+void AskDataReceiver(String CarteId){
   while (true){
     sendMsgToSlaveWithConfirmation("DATA");
-    sendMsgToSlave(carte_id);
+    sendMsgToSlave(CarteId);
     carte = "";
     while (true){
         delay(10);
         if (Serial3.available()>0){
           delay(CommunicationDelay); // Wait for the short message to arrive
-          Serial.print("Decrypting cards details");
+          Serial.println("Decrypting cards details");
           while (Serial3.available() > 0) {
             char serialData = Serial3.read();
             carte += String(serialData);
@@ -415,14 +384,14 @@ void AskDataReceiver(String carte_id){
     }
     Serial.println(carte);
     soldeReceiver = ExtractFieldValue(carte, "S");
-    idReceiver = ExtractFieldValue(carte, "A");
-    intCarteCodeReceiver = ExtractFieldValue(carte, "C");
-    if (idReceiver != -1 && intCarteCodeReceiver != -1 && soldeReceiver != -1 ){
+    idReceiver = ExtractFieldValueAsString(carte, "A");
+    stringCarteCodeReceiver = ExtractFieldValueAsString(carte, "C");
+    if (idReceiver != "-1" && stringCarteCodeReceiver != -1 && soldeReceiver != -1 ){
       break;
     }
   }
 }
-bool ModifyData(String newId, String newCarteId, int newSolde, int newCarteCode){
+bool ModifyData(String newId, String newCarteId, int newSolde, String newCarteCode){
   while (true){
     sendMsgToSlaveWithConfirmation("MODIFY");
     sendMsgToSlave(newId);
@@ -431,7 +400,7 @@ bool ModifyData(String newId, String newCarteId, int newSolde, int newCarteCode)
         delay(10);
         if (Serial3.available()>0){
           delay(CommunicationDelay); // Wait for the short message to arrive
-          Serial.print("Sending id to blockchain");
+          Serial.println("Sending id to blockchain");
           while (Serial3.available() > 0) {
             char serialData = Serial3.read();
             response += String(serialData);
@@ -446,7 +415,7 @@ bool ModifyData(String newId, String newCarteId, int newSolde, int newCarteCode)
           delay(10);
           if (Serial3.available()>0){
             delay(CommunicationDelay); // Wait for the short message to arrive
-            Serial.print("Sending carte_id to blockchain");
+            Serial.println("Sending CarteId to blockchain");
             while (Serial3.available() > 0) {
               char serialData = Serial3.read();
               response += String(serialData);
@@ -461,7 +430,7 @@ bool ModifyData(String newId, String newCarteId, int newSolde, int newCarteCode)
             delay(10);
             if (Serial3.available()>0){
               delay(CommunicationDelay); // Wait for the short message to arrive
-              Serial.print("Sending solde to blockchain");
+              Serial.println("Sending solde to blockchain");
               while (Serial3.available() > 0) {
                 char serialData = Serial3.read();
                 response += String(serialData);
@@ -476,7 +445,7 @@ bool ModifyData(String newId, String newCarteId, int newSolde, int newCarteCode)
               delay(10);
               if (Serial3.available()>0){
                 delay(CommunicationDelay); // Wait for the short message to arrive
-                Serial.print("Sending carteCode to blockchain");
+                Serial.println("Sending carteCode to blockchain");
                 while (Serial3.available() > 0) {
                   char serialData = Serial3.read();
                   response += String(serialData);
@@ -502,33 +471,6 @@ bool ModifyData(String newId, String newCarteId, int newSolde, int newCarteCode)
   }
 }
 
-void virement(){
-  tft.setTextSize(2);
-  bool testouch=false;
-  tft.fillScreen(ILI9341_WHITE);
-  tft.setTextColor(ILI9341_BLACK);
-  tft.setCursor(10, 110);tft.print("Processus irreverssible");
-  tft.setTextColor(ILI9341_WHITE);
-  tft.fillRoundRect(5,195,94,24,10,ILI9341_BLACK);tft.setCursor(10, 200);tft.print("Annuler");
-  tft.fillRoundRect(205,195,94,24,10,ILI9341_BLACK);tft.setCursor(210, 200);tft.print("Valider");
-  while(testouch==false){
-    boolean touch = ts.touched();
-    TS_Point p = ts.getPoint();
-    if(touch && p.x>3200 && p.x<3600 && p.y>450 &&p.y<1500){
-    menu();
-    delay(100);
-    testouch=true;
-    }
-    if(touch && p.x>3200 && p.x<3600 && p.y>2700 &&p.y<3700){ // valider
-    autreMontantVirement();
-    delay(100);
-    testouch=true;
-    delay(100);
-    testouch=true;
-    }
-  }
-}
-
 void retrait(){
   bool testouch=false;
   tft.fillScreen(ILI9341_WHITE);
@@ -543,7 +485,7 @@ void retrait(){
   tft.fillRoundRect(165,95,45,24,10,ILI9341_BLACK);tft.setCursor(170, 100);tft.print("50$");
   tft.fillRoundRect(240,95,55,24,10,ILI9341_BLACK);tft.setCursor(245, 100);tft.print("100$");
   tft.fillRoundRect(70,135,165,24,10,ILI9341_BLACK);tft.setCursor(75, 140);tft.print("Autre montant");
-  int soldeTemp=0;
+  int soldeTemp=10;
   while(testouch==false){
     boolean touch = ts.touched();
     TS_Point p = ts.getPoint();
@@ -601,9 +543,12 @@ void retrait(){
     testouch=true;
     }
     if(touch && p.x>3200 && p.x<3600 && p.y>2700 &&p.y<3700){ // valider
-    while (!ModifyData(String(id), carte_id, solde-soldeTemp, intCarteCode)){}
-    solde-=soldeTemp;
-    Serial.println(soldeTemp);
+      if (solde >= soldeTemp){
+        while (!ModifyData(String(id), stringCarteId, solde-soldeTemp, stringCarteCode)){}
+        solde-=soldeTemp;
+      } else {
+        Serial.println("Solde insuffisant");
+      }
     menu();
     delay(100);
     testouch=true;
@@ -625,14 +570,10 @@ void depot(){
   tft.fillRoundRect(165,95,45,24,10,ILI9341_BLACK);tft.setCursor(170, 100);tft.print("50$");
   tft.fillRoundRect(240,95,55,24,10,ILI9341_BLACK);tft.setCursor(245, 100);tft.print("100$");
   tft.fillRoundRect(70,135,165,24,10,ILI9341_BLACK);tft.setCursor(75, 140);tft.print("Autre montant");
-  int soldeTemp=0;
+  int soldeTemp=10;
   while(testouch==false){
     boolean touch = ts.touched();
     TS_Point p = ts.getPoint();
-  //tft.fillRect(50, 180, 140, 60, ILI9341_WHITE);
-  //tft.setTextColor(ILI9341_DARKGREEN);
-  //tft.setCursor(10, 180);tft.print("X = ");tft.print(p.x);
-  //tft.setCursor(10, 210);tft.print("Y = ");tft.print(p.y);
     if(touch && p.x>1200 && p.x<2200 && p.y>200 &&p.y<800){
     soldeTemp=10;
     tft.setTextColor(ILI9341_WHITE);
@@ -687,7 +628,9 @@ void depot(){
     testouch=true;
     }
     if(touch && p.x>3200 && p.x<3600 && p.y>2700 &&p.y<3700){ // valider
-    depot_confirmation(soldeTemp);
+      if (soldeTemp > 0){
+        depot_confirmation(soldeTemp);
+      }
     delay(100);
     testouch=true;
     }
@@ -716,7 +659,7 @@ void depot_confirmation(int soldeTemp){
     testouch=true;
     }
     if(touch && p.x>3200 && p.x<3600 && p.y>2700 &&p.y<3700){
-    while (!ModifyData(String(id), carte_id, solde+montant, intCarteCode)){}
+    while (!ModifyData(String(id), stringCarteId, solde+montant, stringCarteCode)){}
       solde+=montant;
     menu();
     delay(100);
@@ -729,14 +672,12 @@ bool code(){
   bool testcode=false;
   tft.fillScreen(ILI9341_WHITE);
   tft.setTextColor(ILI9341_BLACK);
-  tft.setCursor(10, 10);tft.print("Bonjour ");tft.print(carte_id);
+  tft.setCursor(10, 10);tft.print("Bonjour ");tft.print(pseudo);
   tft.setCursor(10, 35);tft.print("Veuillez rentrer votre"),tft.setCursor(10, 60);tft.print("code sur le digicode");
   tft.setTextColor(ILI9341_WHITE);
   tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);
-  //tft.fillRoundRect(5,195,94,24,10,ILI9341_BLACK);tft.setCursor(10, 200);tft.print("Valider");
   tft.setTextSize(4);
   tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("_");
-  //String code; 
   pad = "";
   getNumber();
   tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("*");
@@ -750,9 +691,9 @@ bool code(){
   tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("* * *");
   delay(1000);
   tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("* * * _");
-  Serial.println(pad);
   getNumber();
-  Serial.println("apres getn umber, avant scree:code: "); // pas toucher cette zone ç tient du miracle
+  Serial.println("Saisie: "+pad);
+  Serial.println("Code personnel: "+stringCarteCode);
   tft.fillRoundRect(65,100,174,54,10,ILI9341_BLACK);tft.setCursor(70, 110);tft.print("* * * *");  tft.setTextSize(2);  tft.fillRoundRect(5,195,94,24,10,ILI9341_BLACK);tft.setCursor(10, 200);tft.print("Valider");
 
 
@@ -764,11 +705,7 @@ bool code(){
         boutonTouche = true;
     }
   }
-  Serial.println("Bouton touché");
-  //String code2=String(code);
-  Serial.println(pad);
-  Serial.println(String(intCarteCode));
-  if (pad.toInt() == intCarteCode){ //bug
+  if (pad == stringCarteCode){ //bug
     Serial.println("Les codes correspondent");
     menu();
     // check screen cadenas ?
@@ -777,7 +714,6 @@ bool code(){
     Serial.println("Les codes ne correspondent pas ");
     TransmitionMessage("Code faux", "La Blockchain a refuse\n votre demande", "O", "K");
     delay(3000);
-    // check screen + error
     return false;
   }
 }
@@ -813,19 +749,25 @@ void autreMontantRetrait(){
     testouch=true;
     }
     if(touch && p.x>3200 && p.x<3600 && p.y>2700 &&p.y<3700){
-    while (!ModifyData(String(id), carte_id, solde-montant, intCarteCode)){}
-    solde-=montant;
-    menu();
-    delay(100);
-    testouch=true;
+      if (montant <= solde){
+        while (!ModifyData(String(id), stringCarteId, solde-montant, stringCarteCode)){}
+        solde-=montant;
+        menu();
+        delay(100);
+        testouch=true;
+      }
     }
     if(touch && p.x>1800 && p.x<2200 && p.y>1100 &&p.y<1500){
-    montant=montant-10;
-    delay(100);
+      if (montant > 20){ 
+        montant=montant-10;
+        delay(100);
+      }
     }
     if(touch && p.x>1800 && p.x<2200 && p.y>2600 &&p.y<3000){
-    montant=montant+10;
-    delay(100);
+      if (montant <= solde-10){ 
+        montant=montant+10;
+        delay(100);
+      }
     }
     delay(100);
   }
@@ -854,15 +796,17 @@ void autreMontantDepot(){
     testouch=true;
     }
     if(touch && p.x>3200 && p.x<3600 && p.y>2700 &&p.y<3700){
-    while (!ModifyData(String(id), carte_id, solde+montant, intCarteCode)){}
+    while (!ModifyData(String(id), stringCarteId, solde+montant, stringCarteCode)){}
     solde+=montant;
     menu();
     delay(100);
     testouch=true;
     }
     if(touch && p.x>1800 && p.x<2200 && p.y>1100 &&p.y<1500){
-    montant=montant-10;
-    delay(100);
+      if (montant > 10){
+        montant=montant-10;
+        delay(100);
+      }
     }
     if(touch && p.x>1800 && p.x<2200 && p.y>2600 &&p.y<3000){
     montant=montant+10;
@@ -896,22 +840,30 @@ void autreMontantVirement(){
     testouch=true;
     }
     if(touch && p.x>3200 && p.x<3600 && p.y>2700 &&p.y<3700){
-        while (!ModifyData(String(id), carte_id, solde-montant, intCarteCode)){}
+      if (montant <= solde){
+        while (!ModifyData(String(id), stringCarteId, solde-montant, stringCarteCode)){}
         receiver = GetId();
         AskDataReceiver(receiver);
-        while (!ModifyData(String(idReceiver), receiver, soldeReceiver+montant, intCarteCodeReceiver)){}
+        while (!ModifyData(String(idReceiver), receiver, soldeReceiver+montant, stringCarteCodeReceiver)){}
         solde-=montant;
-        menu();
-        delay(100);
-        testouch=true;
+      } else {
+        Serial.println("Solde insuffisant");
+      }
+      menu();
+      delay(100);
+      testouch=true;
     }
     if(touch && p.x>1800 && p.x<2200 && p.y>1100 &&p.y<1500){
-    montant=montant-10;
-    delay(100);
+      if (montant > 20){ 
+        montant=montant-10;
+        delay(100);
+      }
     }
     if(touch && p.x>1800 && p.x<2200 && p.y>2600 &&p.y<3000){
-    montant=montant+10;
-    delay(100);
+      if (montant <= solde-10){ 
+        montant=montant+10;
+        delay(100);
+      }
     }
     delay(100);
   }
