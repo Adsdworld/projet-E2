@@ -2,8 +2,8 @@
 
 function Connection(){
     $server = "localhost";
-    $user = "id21292157_projete2user";
-    $pass = "projet-E2-password";
+    $user = "";
+    $pass = "";
     $db = "id21292157_projete2database";
 
     // Connexion à la base de données avec MySQLi

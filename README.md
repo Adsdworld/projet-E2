@@ -11,7 +11,7 @@
 - [Nathan](https://github.com/NathanGitHub)
 
 ## Projet-E2 
-[Raport](https://docs.google.com/document/d/1Rg2MChupjjaR8jNp49N56Lsr9ib3Ojr92YFEpUR2RQQ/edit?usp=sharing)
+[Rapport](https://docs.google.com/document/d/1Rg2MChupjjaR8jNp49N56Lsr9ib3Ojr92YFEpUR2RQQ/edit?usp=sharing)
 
 
 ### Description
@@ -30,6 +30,7 @@ Réalisation d'un distributeur à billets comprenant un lecteur RFID, un écran 
 - Le branchement du Digicode est effectué sur des broches se suivant pour facilité l'initialisation de broches.
 - Installer la communication RX TX
 - Avant d'installer le lecteur RFID, Installer l'écran en respectant le montage indiqué, le lecteur RFID utilisera les mêmes branchements SPI que l'écran à savoir CLOCK, MOSI, MISO
+- installer le driver à partir de l'url disponible dans librairie pour l'arduino WiFi
 
 ## Installation du site
 - 000 webhost gratuit ou Apache

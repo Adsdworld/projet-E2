@@ -6,7 +6,7 @@ $link = Connection();
 if (isset($_GET["carte_id"])) {
     $carte_id = $_GET["carte_id"];
     
-    $query = "SELECT * FROM `information_table` WHERE `carte_id` = '$carte_id'";
+    $query = "SELECT * FROM `information_table` WHERE `I` = '$carte_id'";
     $result = mysqli_query($link, $query);
 
     if ($result !== FALSE) {

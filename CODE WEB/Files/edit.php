@@ -3,18 +3,19 @@ include("connect.php");
 
 $link = Connection();
 
-if (isset($_POST["carte_id"])) {
+if (isset($_POST["id"])) {
+    $id = $_POST["id"];
     $carte_id = $_POST["carte_id"];
     $solde = $_POST["solde"];
     $carte_code = $_POST["carte_code"];
 
     // Préparez la requête SQL en utilisant MySQLi avec des déclarations préparées pour éviter les injections SQL
-    $query = "UPDATE `information_table` SET `solde` = ?, `carte_code` = ? WHERE `carte_id` = ?";
+    $query = "UPDATE `information_table` SET `I` = ?, `S` = ?, `C` = ? WHERE `A` = ?";
     $stmt = mysqli_prepare($link, $query);
 
     if ($stmt) {
         // Associez les valeurs aux paramètres de la requête
-        mysqli_stmt_bind_param($stmt, "sss", $solde, $carte_code, $carte_id);
+        mysqli_stmt_bind_param($stmt, "ssss", $carte_id, $solde, $carte_code, $id);
 
         // Exécutez la requête
         mysqli_stmt_execute($stmt);
@@ -29,6 +30,6 @@ if (isset($_POST["carte_id"])) {
     
     mysqli_close($link);
 } else {
-    echo "Paramètre 'carte_id' manquant.";
+    echo "Paramètre 'id' manquant.";
 }
 ?>
