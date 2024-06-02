@@ -10,7 +10,9 @@
 - [Ghyslain](https://github.com/GhyslainGitHub)
 - [Nathan](https://github.com/NathanGitHub)
 
-## Projet-E2
+## Projet-E2 
+[Raport](https://docs.google.com/document/d/1Rg2MChupjjaR8jNp49N56Lsr9ib3Ojr92YFEpUR2RQQ/edit?usp=sharing)
+
 
 ### Description
 Réalisation d'un distributeur à billets comprenant un lecteur RFID, un écran TFT, un digicode et une puce WiFi intégrer sur une arduino.
